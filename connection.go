@@ -9,14 +9,21 @@ import (
 )
 
 type Connection struct {
-	ws        *websocket.Conn
-	repsChan  chan string
-	isClosed  atomic.Bool
-	waitGroup *sync.WaitGroup
+	ws          *websocket.Conn
+	repsChan    chan string
+	isClosed    atomic.Bool
+	waitGroup   *sync.WaitGroup
+	onMessageCB onMessage
 }
 
-func NewConnection(ws *websocket.Conn) *Connection {
-	conn := &Connection{ws: ws}
+type onMessage func(conn *Connection, msg string) error
+
+func NewConnection(ws *websocket.Conn, cb onMessage) *Connection {
+	conn := &Connection{
+		ws:          ws,
+		onMessageCB: cb,
+		waitGroup:   &sync.WaitGroup{},
+	}
 
 	return conn
 }
@@ -56,12 +63,17 @@ func (c *Connection) HandleRequest() {
 }
 
 func (c *Connection) onMessage(msg string) {
-	slog.Info("Received message: " + msg)
+	slog.Debug("Received message: " + msg)
+	go c.onMessageCB(c, msg)
 }
 
 func (c *Connection) SendResponse(msg string) error {
 	c.waitGroup.Add(1)
 	defer c.waitGroup.Done()
+
+	if c.isClosed.Load() {
+		return nil
+	}
 
 	return websocket.Message.Send(c.ws, msg)
 }
