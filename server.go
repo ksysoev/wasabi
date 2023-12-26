@@ -1,7 +1,6 @@
 package wasabi
 
 import (
-	"io"
 	"net/http"
 	"strconv"
 
@@ -19,7 +18,7 @@ func NewServer(port uint16) *Server {
 
 func (s *Server) Run() error {
 	listen := ":" + strconv.Itoa(int(s.port))
-	http.Handle("/", websocket.Handler(EchoServer))
+	http.Handle("/", websocket.Handler(s.connectionHandler))
 
 	slog.Info("Starting app server on " + listen)
 
@@ -31,6 +30,8 @@ func (s *Server) Run() error {
 	return nil
 }
 
-func EchoServer(ws *websocket.Conn) {
-	io.Copy(ws, ws)
+func (s *Server) connectionHandler(ws *websocket.Conn) {
+	conn := NewConnection(ws)
+
+	conn.HandleRequest()
 }
