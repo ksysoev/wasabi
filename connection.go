@@ -16,7 +16,7 @@ type Connection struct {
 	onMessageCB onMessage
 }
 
-type onMessage func(conn *Connection, msg string) error
+type onMessage func(conn *Connection, req *JSONRPCRequest) error
 
 func NewConnection(ws *websocket.Conn, cb onMessage) *Connection {
 	conn := &Connection{
@@ -64,7 +64,23 @@ func (c *Connection) HandleRequest() {
 
 func (c *Connection) onMessage(msg string) {
 	slog.Debug("Received message: " + msg)
-	go c.onMessageCB(c, msg)
+
+	req, err := NewRequest(msg)
+	if err != nil {
+		slog.Debug("Error parsing request: " + err.Error())
+		resp := ResponseFromError(err)
+
+		data, err := resp.String()
+		if err != nil {
+			slog.Debug("Error creating response: " + err.Error())
+			return
+		}
+
+		c.SendResponse(data)
+		return
+	}
+
+	go c.onMessageCB(c, req)
 }
 
 func (c *Connection) SendResponse(msg string) error {

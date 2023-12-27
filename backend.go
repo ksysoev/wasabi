@@ -14,8 +14,8 @@ func NewBackend(endpoint string) *HttpBackend {
 	return &HttpBackend{endpoint: endpoint}
 }
 
-func (b *HttpBackend) Forward(conn *Connection, read string) error {
-	body := bytes.NewBufferString(read)
+func (b *HttpBackend) Forward(conn *Connection, req *JSONRPCRequest) error {
+	body := bytes.NewBufferString(req.Data)
 	httpReq, err := http.NewRequest("POST", b.endpoint, body)
 	if err != nil {
 		return err
@@ -38,6 +38,13 @@ func (b *HttpBackend) Forward(conn *Connection, read string) error {
 		slog.Error("Error reading response body", "error", err)
 		return err
 	}
+	apiResp := NewResponse(req.ID, respBody.String())
+	data, err := apiResp.String()
 
-	return conn.SendResponse(respBody.String())
+	if err != nil {
+		slog.Error("Error creating response", "error", err)
+		return err
+	}
+
+	return conn.SendResponse(data)
 }
