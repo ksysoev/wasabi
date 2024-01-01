@@ -9,30 +9,30 @@ import (
 )
 
 type Server struct {
-	port       uint16
-	dispatcher Dispatcher
+	port uint16
+	mux  *http.ServeMux
 }
 
-func NewServer(port uint16, dispatcher Dispatcher) *Server {
-	return &Server{port: port, dispatcher: dispatcher}
+func NewServer(port uint16) *Server {
+	return &Server{
+		port: port,
+		mux:  http.NewServeMux(),
+	}
+}
+
+func (s *Server) AddChannel(channel Channel) {
+	s.mux.Handle(channel.Path(), websocket.Handler(channel.ConnectionHandler))
 }
 
 func (s *Server) Run() error {
 	listen := ":" + strconv.Itoa(int(s.port))
-	http.Handle("/", websocket.Handler(s.connectionHandler))
 
 	slog.Info("Starting app server on " + listen)
 
-	err := http.ListenAndServe(listen, nil)
+	err := http.ListenAndServe(listen, s.mux)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())
 	}
 
 	return nil
-}
-
-func (s *Server) connectionHandler(ws *websocket.Conn) {
-	conn := NewConnection(ws, s.dispatcher.Dispatch)
-
-	conn.HandleRequest()
 }

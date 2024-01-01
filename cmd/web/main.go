@@ -12,7 +12,9 @@ func main() {
 	backend := wasabi.NewBackend("http://localhost:8081")
 	dispatcher := wasabi.NewPipeDispatcher(backend)
 
-	server := wasabi.NewServer(8080, dispatcher)
+	server := wasabi.NewServer(8080)
+	channel := wasabi.NewDefaultChannel("/", dispatcher)
+	server.AddChannel(channel)
 	err := server.Run()
 
 	if err != nil {
