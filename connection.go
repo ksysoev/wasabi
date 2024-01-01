@@ -16,7 +16,7 @@ type Connection struct {
 	onMessageCB onMessage
 }
 
-type onMessage func(conn *Connection, req *JSONRPCRequest) error
+type onMessage func(conn *Connection, req Request) error
 
 func NewConnection(ws *websocket.Conn, cb onMessage) *Connection {
 	conn := &Connection{

@@ -10,7 +10,9 @@ import (
 func main() {
 
 	backend := wasabi.NewBackend("http://localhost:8081")
-	server := wasabi.NewServer(8080, backend)
+	dispatcher := wasabi.NewPipeDispatcher(backend)
+
+	server := wasabi.NewServer(8080, dispatcher)
 	err := server.Run()
 
 	if err != nil {

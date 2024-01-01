@@ -9,12 +9,12 @@ import (
 )
 
 type Server struct {
-	port    uint16
-	backend *HttpBackend
+	port       uint16
+	dispatcher Dispatcher
 }
 
-func NewServer(port uint16, backend *HttpBackend) *Server {
-	return &Server{port: port, backend: backend}
+func NewServer(port uint16, dispatcher Dispatcher) *Server {
+	return &Server{port: port, dispatcher: dispatcher}
 }
 
 func (s *Server) Run() error {
@@ -32,7 +32,7 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) connectionHandler(ws *websocket.Conn) {
-	conn := NewConnection(ws, s.backend.Forward)
+	conn := NewConnection(ws, s.dispatcher.Dispatch)
 
 	conn.HandleRequest()
 }

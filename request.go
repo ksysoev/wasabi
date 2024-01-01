@@ -5,11 +5,18 @@ import (
 	"fmt"
 )
 
+type Request interface {
+	String() (string, error)
+	Action() string
+	Stash() Stasher
+}
+
 type JSONRPCRequest struct {
 	Data         string
 	orginReq     *RPCRequest
 	ID           string
 	ConnectionID string
+	stash        Stasher
 }
 
 type RPCRequest struct {
@@ -27,7 +34,12 @@ func NewRequest(data string) (*JSONRPCRequest, error) {
 		return nil, err
 	}
 
-	return &JSONRPCRequest{ID: originReq.ID, Data: data, orginReq: originReq}, nil
+	return &JSONRPCRequest{
+		ID:       originReq.ID,
+		Data:     data,
+		orginReq: originReq,
+		stash:    NewStashStore(),
+	}, nil
 }
 
 func parseRequest(data string) (*RPCRequest, error) {
@@ -41,4 +53,16 @@ func parseRequest(data string) (*RPCRequest, error) {
 	}
 
 	return &req, nil
+}
+
+func (r *JSONRPCRequest) String() (string, error) {
+	return r.Data, nil
+}
+
+func (r *JSONRPCRequest) Action() string {
+	return r.orginReq.Method
+}
+
+func (r *JSONRPCRequest) Stash() Stasher {
+	return r.stash
 }

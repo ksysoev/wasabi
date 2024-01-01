@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+type Backend interface {
+	Forward(conn *Connection, r Request) error
+}
+
 type HttpBackend struct {
 	endpoint string
 }
@@ -14,7 +18,11 @@ func NewBackend(endpoint string) *HttpBackend {
 	return &HttpBackend{endpoint: endpoint}
 }
 
-func (b *HttpBackend) Forward(conn *Connection, req *JSONRPCRequest) error {
+func (b *HttpBackend) Forward(conn *Connection, r Request) error {
+	req, ok := r.(*JSONRPCRequest)
+	if !ok {
+		return nil
+	}
 	body := bytes.NewBufferString(req.Data)
 	httpReq, err := http.NewRequest("POST", b.endpoint, body)
 	if err != nil {
