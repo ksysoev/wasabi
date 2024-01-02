@@ -13,12 +13,17 @@ type Channel interface {
 }
 
 type DefaultChannel struct {
-	path       string
-	disptacher Dispatcher
+	path         string
+	disptacher   Dispatcher
+	connRegistry ConnectionRegistry
 }
 
-func NewDefaultChannel(path string, dispatcher Dispatcher) *DefaultChannel {
-	return &DefaultChannel{path: path}
+func NewDefaultChannel(path string, dispatcher Dispatcher, connRegistry ConnectionRegistry) *DefaultChannel {
+	return &DefaultChannel{
+		path:         path,
+		disptacher:   dispatcher,
+		connRegistry: connRegistry,
+	}
 }
 
 func (c *DefaultChannel) Path() string {
@@ -26,7 +31,7 @@ func (c *DefaultChannel) Path() string {
 }
 
 func (c *DefaultChannel) ConnectionHandler(ws *websocket.Conn) {
-	conn := NewConnection(ws, c.disptacher.Dispatch)
+	conn := c.connRegistry.AddConnection(ws, c.disptacher.Dispatch)
 
 	conn.HandleRequest()
 }

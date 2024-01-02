@@ -5,27 +5,84 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
 )
 
+type ConnectionRegistry interface {
+	AddConnection(ws *websocket.Conn, cb onMessage) *Connection
+	GetConnection(id string) *Connection
+}
+
+type DefaultConnectionRegistry struct {
+	connections map[string]*Connection
+	mu          sync.RWMutex
+	onClose     chan string
+}
+
+func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
+	reg := &DefaultConnectionRegistry{
+		connections: make(map[string]*Connection),
+		onClose:     make(chan string),
+	}
+
+	go reg.handleClose()
+
+	return reg
+}
+
+func (r *DefaultConnectionRegistry) AddConnection(ws *websocket.Conn, cb onMessage) *Connection {
+	conn := NewConnection(ws, cb, r.onClose)
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.connections[conn.ID()] = conn
+
+	return conn
+}
+
+func (r *DefaultConnectionRegistry) GetConnection(id string) *Connection {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	return r.connections[id]
+}
+
+func (r *DefaultConnectionRegistry) handleClose() {
+	for id := range r.onClose {
+		r.mu.Lock()
+		delete(r.connections, id)
+		r.mu.Unlock()
+	}
+}
+
 type Connection struct {
+	id          string
 	ws          *websocket.Conn
 	repsChan    chan string
 	isClosed    atomic.Bool
 	waitGroup   *sync.WaitGroup
 	onMessageCB onMessage
+	onClose     chan<- string
 }
 
 type onMessage func(conn *Connection, req Request) error
 
-func NewConnection(ws *websocket.Conn, cb onMessage) *Connection {
+func NewConnection(ws *websocket.Conn, cb onMessage, onClose chan<- string) *Connection {
 	conn := &Connection{
+		id:          uuid.New().String(),
 		ws:          ws,
 		onMessageCB: cb,
 		waitGroup:   &sync.WaitGroup{},
+		onClose:     onClose,
 	}
 
 	return conn
+}
+
+func (c *Connection) ID() string {
+	return c.id
 }
 
 func (c *Connection) Close() {
@@ -33,6 +90,7 @@ func (c *Connection) Close() {
 		return
 	}
 
+	c.onClose <- c.id
 	c.isClosed.Store(true)
 
 	c.ws.Close()
