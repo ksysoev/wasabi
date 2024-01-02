@@ -10,7 +10,7 @@ import (
 )
 
 type ConnectionRegistry interface {
-	AddConnection(ws *websocket.Conn, cb onMessage) *Connection
+	AddConnection(conn *Connection) *Connection
 	GetConnection(id string) *Connection
 }
 
@@ -31,9 +31,8 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	return reg
 }
 
-func (r *DefaultConnectionRegistry) AddConnection(ws *websocket.Conn, cb onMessage) *Connection {
-	conn := NewConnection(ws, cb, r.onClose)
-
+func (r *DefaultConnectionRegistry) AddConnection(conn *Connection) *Connection {
+	conn.onClose = r.onClose
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -65,20 +64,23 @@ type Connection struct {
 	waitGroup   *sync.WaitGroup
 	onMessageCB onMessage
 	onClose     chan<- string
+	stash       Stasher
 }
 
 type onMessage func(conn *Connection, req Request) error
 
-func NewConnection(ws *websocket.Conn, cb onMessage, onClose chan<- string) *Connection {
+func NewConnection() *Connection {
 	conn := &Connection{
-		id:          uuid.New().String(),
-		ws:          ws,
-		onMessageCB: cb,
-		waitGroup:   &sync.WaitGroup{},
-		onClose:     onClose,
+		id:        uuid.New().String(),
+		waitGroup: &sync.WaitGroup{},
+		stash:     NewStashStore(),
 	}
 
 	return conn
+}
+
+func (c *Connection) Stash() Stasher {
+	return c.stash
 }
 
 func (c *Connection) ID() string {

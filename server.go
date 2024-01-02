@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"golang.org/x/exp/slog"
-	"golang.org/x/net/websocket"
 )
 
 type Server struct {
@@ -21,7 +20,10 @@ func NewServer(port uint16) *Server {
 }
 
 func (s *Server) AddChannel(channel Channel) {
-	s.mux.Handle(channel.Path(), websocket.Handler(channel.ConnectionHandler))
+	s.mux.Handle(
+		channel.Path(),
+		channel,
+	)
 }
 
 func (s *Server) Run() error {

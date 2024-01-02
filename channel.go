@@ -7,8 +7,7 @@ import (
 )
 
 type Channel interface {
-	ConnectionHandler(ws *websocket.Conn)
-	MiddlewareHandler(next http.Handler) http.Handler
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
 	Path() string
 }
 
@@ -30,12 +29,16 @@ func (c *DefaultChannel) Path() string {
 	return c.path
 }
 
-func (c *DefaultChannel) ConnectionHandler(ws *websocket.Conn) {
-	conn := c.connRegistry.AddConnection(ws, c.disptacher.Dispatch)
+func (c *DefaultChannel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	conn.HandleRequest()
-}
+	conn := NewConnection()
+	conn.Stash().Set("headers", r.Header)
 
-func (c *DefaultChannel) MiddlewareHandler(next http.Handler) http.Handler {
-	return next
+	websocket.Handler(func(ws *websocket.Conn) {
+		conn.ws = ws
+		conn.onMessageCB = c.disptacher.Dispatch
+		c.connRegistry.AddConnection(conn)
+
+		conn.HandleRequest()
+	}).ServeHTTP(w, r)
 }
