@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -8,14 +9,14 @@ import (
 )
 
 func main() {
-
+	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 	backend := wasabi.NewBackend("http://localhost:8081")
 
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
 	dispatcher := wasabi.NewPipeDispatcher(backend)
 
 	server := wasabi.NewServer(8080)
-	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry)
+	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry, &wasabi.JSONRPCRequestParser{})
 	server.AddChannel(channel)
 
 	err := server.Run()

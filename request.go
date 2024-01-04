@@ -11,6 +11,10 @@ type Request interface {
 	Stash() Stasher
 }
 
+type RequestParser interface {
+	Parse(data []byte) (Request, error)
+}
+
 type JSONRPCRequest struct {
 	Data         string
 	orginReq     *RPCRequest
@@ -26,9 +30,12 @@ type RPCRequest struct {
 	// TODO make work with string and numbers
 	ID string `json:"id"`
 }
+type JSONRPCRequestParser struct{}
 
-func NewRequest(data string) (*JSONRPCRequest, error) {
-	originReq, err := parseRequest(data)
+func (j *JSONRPCRequestParser) Parse(data []byte) (Request, error) {
+	msg := string(data)
+
+	originReq, err := parseRequest(msg)
 
 	if err != nil {
 		return nil, err
@@ -36,7 +43,7 @@ func NewRequest(data string) (*JSONRPCRequest, error) {
 
 	return &JSONRPCRequest{
 		ID:       originReq.ID,
-		Data:     data,
+		Data:     msg,
 		orginReq: originReq,
 		stash:    NewStashStore(),
 	}, nil

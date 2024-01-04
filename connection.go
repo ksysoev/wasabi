@@ -67,13 +67,12 @@ type Connection struct {
 	stash       Stasher
 }
 
-type onMessage func(conn *Connection, req Request) error
+type onMessage func(conn *Connection, data []byte)
 
 func NewConnection() *Connection {
 	conn := &Connection{
-		id:        uuid.New().String(),
-		waitGroup: &sync.WaitGroup{},
-		stash:     NewStashStore(),
+		id:    uuid.New().String(),
+		stash: NewStashStore(),
 	}
 
 	return conn
@@ -100,8 +99,8 @@ func (c *Connection) Close() {
 
 func (c *Connection) HandleRequest() {
 	for {
-		var msg string
-		err := websocket.Message.Receive(c.ws, &msg)
+		var data []byte
+		err := websocket.Message.Receive(c.ws, &data)
 
 		if err != nil {
 			if c.isClosed.Load() {
@@ -114,39 +113,21 @@ func (c *Connection) HandleRequest() {
 				return
 			}
 
-			slog.Debug("Error reading message: " + err.Error())
+			if err.Error() == "ErrFrameTooLarge" {
+				// Unexpectedkly large message received
+				// it's probably more safe to close connection
+				c.Close()
+				return
+			}
+
+			slog.Info("Error reading message: " + err.Error())
 			continue
 		}
-
-		c.onMessage(msg)
+		go c.onMessageCB(c, data)
 	}
-}
-
-func (c *Connection) onMessage(msg string) {
-	slog.Debug("Received message: " + msg)
-
-	req, err := NewRequest(msg)
-	if err != nil {
-		slog.Debug("Error parsing request: " + err.Error())
-		resp := ResponseFromError(err)
-
-		data, err := resp.String()
-		if err != nil {
-			slog.Debug("Error creating response: " + err.Error())
-			return
-		}
-
-		c.SendResponse(data)
-		return
-	}
-
-	go c.onMessageCB(c, req)
 }
 
 func (c *Connection) SendResponse(msg string) error {
-	c.waitGroup.Add(1)
-	defer c.waitGroup.Done()
-
 	if c.isClosed.Load() {
 		return nil
 	}
