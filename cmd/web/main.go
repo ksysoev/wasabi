@@ -19,8 +19,7 @@ func main() {
 	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry, &wasabi.JSONRPCRequestParser{})
 	server.AddChannel(channel)
 
-	err := server.Run()
-
+	err := server.Run(context.Background())
 	if err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)

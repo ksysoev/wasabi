@@ -1,6 +1,7 @@
 package wasabi
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 type Server struct {
 	port uint16
 	mux  *http.ServeMux
+	ctx  context.Context
 }
 
 func NewServer(port uint16) *Server {
@@ -26,14 +28,18 @@ func (s *Server) AddChannel(channel Channel) {
 	)
 }
 
-func (s *Server) Run() error {
+func (s *Server) Run(ctx context.Context) error {
 	listen := ":" + strconv.Itoa(int(s.port))
+
+	execCtx, cancel := context.WithCancel(ctx)
+	s.ctx = execCtx
+	defer cancel()
 
 	slog.Info("Starting app server on " + listen)
 
 	err := http.ListenAndServe(listen, s.mux)
 	if err != nil {
-		panic("ListenAndServe: " + err.Error())
+		return err
 	}
 
 	return nil

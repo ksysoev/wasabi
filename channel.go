@@ -1,6 +1,7 @@
 package wasabi
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +11,7 @@ import (
 type Channel interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 	Path() string
+	SetContext(ctx context.Context)
 }
 
 type DefaultChannel struct {
@@ -17,6 +19,7 @@ type DefaultChannel struct {
 	disptacher   Dispatcher
 	connRegistry ConnectionRegistry
 	reqParser    RequestParser
+	ctx          context.Context
 }
 
 func NewDefaultChannel(path string, dispatcher Dispatcher, connRegistry ConnectionRegistry, reqParser RequestParser) *DefaultChannel {
@@ -66,4 +69,8 @@ func handleRequestError(err error, conn *Connection) {
 	}
 
 	conn.SendResponse(data)
+}
+
+func (c *DefaultChannel) SetContext(ctx context.Context) {
+	c.ctx = ctx
 }
