@@ -1,6 +1,8 @@
 package wasabi
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -59,20 +61,24 @@ func (r *DefaultConnectionRegistry) handleClose() {
 type Connection struct {
 	id          string
 	ws          *websocket.Conn
-	repsChan    chan string
+	ctx         context.Context
 	isClosed    atomic.Bool
-	waitGroup   *sync.WaitGroup
 	onMessageCB onMessage
 	onClose     chan<- string
 	stash       Stasher
+	ctxCancel   context.CancelFunc
 }
 
 type onMessage func(conn *Connection, data []byte)
 
-func NewConnection() *Connection {
+func NewConnection(ctx context.Context) *Connection {
+	ctx, cancel := context.WithCancel(ctx)
+
 	conn := &Connection{
-		id:    uuid.New().String(),
-		stash: NewStashStore(),
+		id:        uuid.New().String(),
+		stash:     NewStashStore(),
+		ctx:       ctx,
+		ctxCancel: cancel,
 	}
 
 	return conn
@@ -91,6 +97,7 @@ func (c *Connection) Close() {
 		return
 	}
 
+	c.ctxCancel()
 	c.onClose <- c.id
 	c.isClosed.Store(true)
 
@@ -98,7 +105,9 @@ func (c *Connection) Close() {
 }
 
 func (c *Connection) HandleRequest() {
-	for {
+	defer c.Close()
+
+	for c.ctx.Err() == nil {
 		var data []byte
 		err := websocket.Message.Receive(c.ws, &data)
 
@@ -128,8 +137,8 @@ func (c *Connection) HandleRequest() {
 }
 
 func (c *Connection) SendResponse(msg string) error {
-	if c.isClosed.Load() {
-		return nil
+	if c.isClosed.Load() || c.ctx.Err() != nil {
+		return fmt.Errorf("connection is closed")
 	}
 
 	return websocket.Message.Send(c.ws, msg)

@@ -9,15 +9,20 @@ import (
 )
 
 type Server struct {
-	port uint16
-	mux  *http.ServeMux
-	ctx  context.Context
+	port      uint16
+	mux       *http.ServeMux
+	ctx       context.Context
+	cancelCtx context.CancelFunc
 }
 
-func NewServer(port uint16) *Server {
+func NewServer(port uint16, ctx context.Context) *Server {
+	execCtx, cancel := context.WithCancel(ctx)
+
 	return &Server{
-		port: port,
-		mux:  http.NewServeMux(),
+		port:      port,
+		mux:       http.NewServeMux(),
+		ctx:       execCtx,
+		cancelCtx: cancel,
 	}
 }
 
@@ -26,14 +31,14 @@ func (s *Server) AddChannel(channel Channel) {
 		channel.Path(),
 		channel,
 	)
+
+	channel.SetContext(s.ctx)
 }
 
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server) Run() error {
 	listen := ":" + strconv.Itoa(int(s.port))
 
-	execCtx, cancel := context.WithCancel(ctx)
-	s.ctx = execCtx
-	defer cancel()
+	defer s.cancelCtx()
 
 	slog.Info("Starting app server on " + listen)
 

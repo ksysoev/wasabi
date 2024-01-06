@@ -15,11 +15,11 @@ func main() {
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
 	dispatcher := wasabi.NewPipeDispatcher(backend)
 
-	server := wasabi.NewServer(8080)
+	server := wasabi.NewServer(8080, context.Background())
 	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry, &wasabi.JSONRPCRequestParser{})
 	server.AddChannel(channel)
 
-	err := server.Run(context.Background())
+	err := server.Run()
 	if err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)

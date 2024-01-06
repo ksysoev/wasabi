@@ -37,7 +37,7 @@ func (c *DefaultChannel) Path() string {
 
 func (c *DefaultChannel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	conn := NewConnection()
+	conn := NewConnection(c.ctx)
 	conn.Stash().Set("headers", r.Header)
 
 	websocket.Handler(func(ws *websocket.Conn) {
