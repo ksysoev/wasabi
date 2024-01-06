@@ -27,12 +27,11 @@ func NewServer(port uint16, ctx context.Context) *Server {
 }
 
 func (s *Server) AddChannel(channel Channel) {
+	channel.SetContext(s.ctx)
 	s.mux.Handle(
 		channel.Path(),
-		channel,
+		channel.HTTPHandler(),
 	)
-
-	channel.SetContext(s.ctx)
 }
 
 func (s *Server) Run() error {

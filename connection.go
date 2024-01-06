@@ -71,17 +71,16 @@ type Connection struct {
 
 type onMessage func(conn *Connection, data []byte)
 
-func NewConnection(ctx context.Context) *Connection {
+func NewConnection(ctx context.Context, ws *websocket.Conn) *Connection {
 	ctx, cancel := context.WithCancel(ctx)
 
-	conn := &Connection{
+	return &Connection{
+		ws:        ws,
 		id:        uuid.New().String(),
 		stash:     NewStashStore(),
 		ctx:       ctx,
 		ctxCancel: cancel,
 	}
-
-	return conn
 }
 
 func (c *Connection) Stash() Stasher {
