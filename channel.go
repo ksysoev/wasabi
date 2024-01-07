@@ -56,6 +56,8 @@ func (c *DefaultChannel) HTTPHandler() http.Handler {
 				handleRequestError(err, conn)
 			}
 
+			req = req.WithContext(ctx)
+
 			if err := c.disptacher.Dispatch(conn, req); err != nil {
 				handleRequestError(err, conn)
 			}

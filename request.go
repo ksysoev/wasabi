@@ -1,14 +1,16 @@
 package wasabi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 )
 
 type Request interface {
 	String() (string, error)
-	Action() string
-	Stash() Stasher
+	RoutingKey() string
+	Context() context.Context
+	WithContext(ctx context.Context) Request
 }
 
 type RequestParser interface {
@@ -20,7 +22,7 @@ type JSONRPCRequest struct {
 	orginReq     *RPCRequest
 	ID           string
 	ConnectionID string
-	stash        Stasher
+	ctx          context.Context
 }
 
 type RPCRequest struct {
@@ -45,7 +47,6 @@ func (j *JSONRPCRequestParser) Parse(data []byte) (Request, error) {
 		ID:       originReq.ID,
 		Data:     msg,
 		orginReq: originReq,
-		stash:    NewStashStore(),
 	}, nil
 }
 
@@ -66,10 +67,23 @@ func (r *JSONRPCRequest) String() (string, error) {
 	return r.Data, nil
 }
 
-func (r *JSONRPCRequest) Action() string {
+func (r *JSONRPCRequest) RoutingKey() string {
 	return r.orginReq.Method
 }
 
-func (r *JSONRPCRequest) Stash() Stasher {
-	return r.stash
+func (r *JSONRPCRequest) Context() context.Context {
+	return r.ctx
+}
+
+func (r *JSONRPCRequest) WithContext(ctx context.Context) Request {
+	if r.ctx == nil {
+		panic("nil context")
+	}
+
+	//TODO: Shall we copy the request? it feels that it will be a bit slow
+	// but in http.Request they do it https://cs.opensource.google/go/go/+/master:src/net/http/request.go;l=362
+	// for now we will just set the context and return original request
+	// but I should think about it
+	r.ctx = ctx
+	return r
 }
