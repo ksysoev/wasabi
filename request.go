@@ -76,7 +76,7 @@ func (r *JSONRPCRequest) Context() context.Context {
 }
 
 func (r *JSONRPCRequest) WithContext(ctx context.Context) Request {
-	if r.ctx == nil {
+	if ctx == nil {
 		panic("nil context")
 	}
 

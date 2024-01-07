@@ -12,19 +12,19 @@ import (
 )
 
 type ConnectionRegistry interface {
-	AddConnection(conn *Connection) *Connection
-	GetConnection(id string) *Connection
+	AddConnection(conn Connection) Connection
+	GetConnection(id string) Connection
 }
 
 type DefaultConnectionRegistry struct {
-	connections map[string]*Connection
+	connections map[string]Connection
 	mu          sync.RWMutex
 	onClose     chan string
 }
 
 func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	reg := &DefaultConnectionRegistry{
-		connections: make(map[string]*Connection),
+		connections: make(map[string]Connection),
 		onClose:     make(chan string),
 	}
 
@@ -33,8 +33,8 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	return reg
 }
 
-func (r *DefaultConnectionRegistry) AddConnection(conn *Connection) *Connection {
-	conn.onClose = r.onClose
+func (r *DefaultConnectionRegistry) AddConnection(conn Connection) Connection {
+	conn.SetOnClose(r.onClose)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -43,7 +43,7 @@ func (r *DefaultConnectionRegistry) AddConnection(conn *Connection) *Connection 
 	return conn
 }
 
-func (r *DefaultConnectionRegistry) GetConnection(id string) *Connection {
+func (r *DefaultConnectionRegistry) GetConnection(id string) Connection {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -58,40 +58,41 @@ func (r *DefaultConnectionRegistry) handleClose() {
 	}
 }
 
-type Connection struct {
+type Connection interface {
+	Send(msg []byte) error
+	Context() context.Context
+	ID() string
+	SetOnClose(chan<- string)
+}
+
+type Conn struct {
 	id          string
 	ws          *websocket.Conn
 	ctx         context.Context
 	isClosed    atomic.Bool
 	onMessageCB onMessage
 	onClose     chan<- string
-	stash       Stasher
 	ctxCancel   context.CancelFunc
 }
 
-type onMessage func(conn *Connection, data []byte)
+type onMessage func(conn Connection, data []byte)
 
-func NewConnection(ctx context.Context, ws *websocket.Conn) *Connection {
+func NewConnection(ctx context.Context, ws *websocket.Conn) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
 
-	return &Connection{
+	return &Conn{
 		ws:        ws,
 		id:        uuid.New().String(),
-		stash:     NewStashStore(),
 		ctx:       ctx,
 		ctxCancel: cancel,
 	}
 }
 
-func (c *Connection) Stash() Stasher {
-	return c.stash
-}
-
-func (c *Connection) ID() string {
+func (c *Conn) ID() string {
 	return c.id
 }
 
-func (c *Connection) Close() {
+func (c *Conn) Close() {
 	if c.isClosed.Load() {
 		return
 	}
@@ -103,7 +104,15 @@ func (c *Connection) Close() {
 	c.ws.Close()
 }
 
-func (c *Connection) HandleRequest() {
+func (c *Conn) Context() context.Context {
+	return c.ctx
+}
+
+func (c *Conn) SetOnClose(onClose chan<- string) {
+	c.onClose = onClose
+}
+
+func (c *Conn) HandleRequest() {
 	defer c.Close()
 
 	for c.ctx.Err() == nil {
@@ -135,7 +144,7 @@ func (c *Connection) HandleRequest() {
 	}
 }
 
-func (c *Connection) SendResponse(msg string) error {
+func (c *Conn) Send(msg []byte) error {
 	if c.isClosed.Load() || c.ctx.Err() != nil {
 		return fmt.Errorf("connection is closed")
 	}

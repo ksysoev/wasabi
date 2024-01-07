@@ -50,13 +50,13 @@ func (c *DefaultChannel) HTTPHandler() http.Handler {
 
 	wsHandler := websocket.Handler(func(ws *websocket.Conn) {
 		conn := NewConnection(ctx, ws)
-		conn.onMessageCB = func(conn *Connection, data []byte) {
+		conn.onMessageCB = func(conn Connection, data []byte) {
 			req, err := c.reqParser.Parse(data)
 			if err != nil {
 				handleRequestError(err, conn)
 			}
 
-			req = req.WithContext(ctx)
+			req = req.WithContext(conn.Context())
 
 			if err := c.disptacher.Dispatch(conn, req); err != nil {
 				handleRequestError(err, conn)
@@ -70,7 +70,7 @@ func (c *DefaultChannel) HTTPHandler() http.Handler {
 	return c.setContext(c.useMiddleware(saveCtx(wsHandler)))
 }
 
-func handleRequestError(err error, conn *Connection) {
+func handleRequestError(err error, conn Connection) {
 	slog.Debug("Error parsing request: " + err.Error())
 	resp := ResponseFromError(err)
 
@@ -80,7 +80,7 @@ func handleRequestError(err error, conn *Connection) {
 		return
 	}
 
-	conn.SendResponse(data)
+	conn.Send([]byte(data))
 }
 
 func (c *DefaultChannel) SetContext(ctx context.Context) {
