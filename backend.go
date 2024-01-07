@@ -7,7 +7,7 @@ import (
 )
 
 type Backend interface {
-	Forward(conn *Connection, r Request) error
+	Handle(conn *Connection, r Request) error
 }
 
 type HttpBackend struct {
@@ -18,7 +18,7 @@ func NewBackend(endpoint string) *HttpBackend {
 	return &HttpBackend{endpoint: endpoint}
 }
 
-func (b *HttpBackend) Forward(conn *Connection, r Request) error {
+func (b *HttpBackend) Handle(conn *Connection, r Request) error {
 	req, ok := r.(*JSONRPCRequest)
 	if !ok {
 		return nil
