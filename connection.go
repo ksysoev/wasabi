@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// ConnectionRegistry is interface for connection registries
 type ConnectionRegistry interface {
 	AddConnection(
 		ctx context.Context,
@@ -20,12 +21,14 @@ type ConnectionRegistry interface {
 	GetConnection(id string) Connection
 }
 
+// DefaultConnectionRegistry is default implementation of ConnectionRegistry
 type DefaultConnectionRegistry struct {
 	connections map[string]Connection
 	mu          sync.RWMutex
 	onClose     chan string
 }
 
+// NewDefaultConnectionRegistry creates new instance of DefaultConnectionRegistry
 func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	reg := &DefaultConnectionRegistry{
 		connections: make(map[string]Connection),
@@ -37,6 +40,7 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	return reg
 }
 
+// AddConnection adds new Websocket connection to registry
 func (r *DefaultConnectionRegistry) AddConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
@@ -51,6 +55,7 @@ func (r *DefaultConnectionRegistry) AddConnection(
 	return conn
 }
 
+// GetConnection returns connection by id
 func (r *DefaultConnectionRegistry) GetConnection(id string) Connection {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -58,6 +63,7 @@ func (r *DefaultConnectionRegistry) GetConnection(id string) Connection {
 	return r.connections[id]
 }
 
+// handleClose handles connection cloasures and removes them from registry
 func (r *DefaultConnectionRegistry) handleClose() {
 	for id := range r.onClose {
 		r.mu.Lock()
@@ -66,14 +72,15 @@ func (r *DefaultConnectionRegistry) handleClose() {
 	}
 }
 
+// Connection is interface for connections
 type Connection interface {
 	Send(msg []byte) error
 	Context() context.Context
 	ID() string
-	SetOnClose(chan<- string)
 	HandleRequests()
 }
 
+// Conn is default implementation of Connection
 type Conn struct {
 	id          string
 	ws          *websocket.Conn
@@ -84,8 +91,10 @@ type Conn struct {
 	ctxCancel   context.CancelFunc
 }
 
+// onMessage is type for onMessage callback
 type onMessage func(conn Connection, data []byte)
 
+// NewConnection creates new instance of websocket connection
 func NewConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
@@ -104,32 +113,19 @@ func NewConnection(
 	}
 }
 
+// ID returns connection id
 func (c *Conn) ID() string {
 	return c.id
 }
 
-func (c *Conn) Close() {
-	if c.isClosed.Load() {
-		return
-	}
-
-	c.ctxCancel()
-	c.onClose <- c.id
-	c.isClosed.Store(true)
-
-	c.ws.Close()
-}
-
+// Context returns connection context
 func (c *Conn) Context() context.Context {
 	return c.ctx
 }
 
-func (c *Conn) SetOnClose(onClose chan<- string) {
-	c.onClose = onClose
-}
-
+// HandleRequests handles incoming messages
 func (c *Conn) HandleRequests() {
-	defer c.Close()
+	defer c.close()
 
 	for c.ctx.Err() == nil {
 		var data []byte
@@ -142,14 +138,14 @@ func (c *Conn) HandleRequests() {
 
 			if err.Error() == "EOF" {
 				slog.Debug("Connection closed")
-				c.Close()
+				c.close()
 				return
 			}
 
 			if err.Error() == "ErrFrameTooLarge" {
 				// Unexpectedkly large message received
 				// it's probably more safe to close connection
-				c.Close()
+				c.close()
 				return
 			}
 
@@ -160,10 +156,24 @@ func (c *Conn) HandleRequests() {
 	}
 }
 
+// Send sends message to connection
 func (c *Conn) Send(msg []byte) error {
 	if c.isClosed.Load() || c.ctx.Err() != nil {
 		return fmt.Errorf("connection is closed")
 	}
 
 	return websocket.Message.Send(c.ws, msg)
+}
+
+// close closes connection
+func (c *Conn) close() {
+	if c.isClosed.Load() {
+		return
+	}
+
+	c.ctxCancel()
+	c.onClose <- c.id
+	c.isClosed.Store(true)
+
+	c.ws.Close()
 }
