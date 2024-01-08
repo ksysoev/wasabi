@@ -8,14 +8,17 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// Channel is interface for channels
 type Channel interface {
 	Path() string
 	SetContext(ctx context.Context)
-	HTTPHandler() http.Handler
+	Handler() http.Handler
 }
 
+// Middlewere is interface for middlewares
 type Middlewere func(http.Handler) http.Handler
 
+// DefaultChannel is default implementation of Channel
 type DefaultChannel struct {
 	path         string
 	disptacher   Dispatcher
@@ -25,7 +28,18 @@ type DefaultChannel struct {
 	middlewares  []Middlewere
 }
 
-func NewDefaultChannel(path string, dispatcher Dispatcher, connRegistry ConnectionRegistry, reqParser RequestParser) *DefaultChannel {
+// NewDefaultChannel creates new instance of DefaultChannel
+// path - channel path
+// dispatcher - dispatcher to use
+// connRegistry - connection registry to use
+// reqParser - request parser to use
+// returns new instance of DefaultChannel
+func NewDefaultChannel(
+	path string,
+	dispatcher Dispatcher,
+	connRegistry ConnectionRegistry,
+	reqParser RequestParser,
+) *DefaultChannel {
 	return &DefaultChannel{
 		path:         path,
 		disptacher:   dispatcher,
@@ -35,11 +49,13 @@ func NewDefaultChannel(path string, dispatcher Dispatcher, connRegistry Connecti
 	}
 }
 
+// Path returns channel path
 func (c *DefaultChannel) Path() string {
 	return c.path
 }
 
-func (c *DefaultChannel) HTTPHandler() http.Handler {
+// Handler returns http.Handler for channel
+func (c *DefaultChannel) Handler() http.Handler {
 	var ctx context.Context
 	saveCtx := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +72,17 @@ func (c *DefaultChannel) HTTPHandler() http.Handler {
 	return c.setContext(c.useMiddleware(saveCtx(wsHandler)))
 }
 
+// SetContext sets context for channel
+func (c *DefaultChannel) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
+
+// Use adds middlewere to channel
+func (c *DefaultChannel) Use(middlewere Middlewere) {
+	c.middlewares = append(c.middlewares, middlewere)
+}
+
+// onMessage handles incoming messages
 func handleRequestError(err error, conn Connection) {
 	slog.Debug("Error parsing request: " + err.Error())
 	resp := ResponseFromError(err)
@@ -69,14 +96,7 @@ func handleRequestError(err error, conn Connection) {
 	conn.Send([]byte(data))
 }
 
-func (c *DefaultChannel) SetContext(ctx context.Context) {
-	c.ctx = ctx
-}
-
-func (c *DefaultChannel) Use(middlewere Middlewere) {
-	c.middlewares = append(c.middlewares, middlewere)
-}
-
+// useMiddleware applies middlewares to handler
 func (c *DefaultChannel) useMiddleware(handler http.Handler) http.Handler {
 	for i := len(c.middlewares) - 1; i >= 0; i-- {
 		handler = c.middlewares[i](handler)
@@ -85,12 +105,14 @@ func (c *DefaultChannel) useMiddleware(handler http.Handler) http.Handler {
 	return handler
 }
 
+// setContext sets context for handler
 func (c *DefaultChannel) setContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r.WithContext(c.ctx))
 	})
 }
 
+// onMessage handles incoming messages
 func (c *DefaultChannel) onMessage(conn Connection, data []byte) {
 	req, err := c.reqParser.Parse(data)
 	if err != nil {
