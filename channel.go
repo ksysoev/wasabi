@@ -49,22 +49,8 @@ func (c *DefaultChannel) HTTPHandler() http.Handler {
 	}
 
 	wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-		conn := NewConnection(ctx, ws)
-		conn.onMessageCB = func(conn Connection, data []byte) {
-			req, err := c.reqParser.Parse(data)
-			if err != nil {
-				handleRequestError(err, conn)
-			}
-
-			req = req.WithContext(conn.Context())
-
-			if err := c.disptacher.Dispatch(conn, req); err != nil {
-				handleRequestError(err, conn)
-			}
-		}
-		c.connRegistry.AddConnection(conn)
-
-		conn.HandleRequest()
+		conn := c.connRegistry.AddConnection(ctx, ws, c.onMessage)
+		conn.HandleRequests()
 	})
 
 	return c.setContext(c.useMiddleware(saveCtx(wsHandler)))
@@ -103,4 +89,17 @@ func (c *DefaultChannel) setContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r.WithContext(c.ctx))
 	})
+}
+
+func (c *DefaultChannel) onMessage(conn Connection, data []byte) {
+	req, err := c.reqParser.Parse(data)
+	if err != nil {
+		handleRequestError(err, conn)
+	}
+
+	req = req.WithContext(conn.Context())
+
+	if err := c.disptacher.Dispatch(conn, req); err != nil {
+		handleRequestError(err, conn)
+	}
 }

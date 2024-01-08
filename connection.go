@@ -12,7 +12,11 @@ import (
 )
 
 type ConnectionRegistry interface {
-	AddConnection(conn Connection) Connection
+	AddConnection(
+		ctx context.Context,
+		ws *websocket.Conn,
+		cb onMessage,
+	) Connection
 	GetConnection(id string) Connection
 }
 
@@ -33,11 +37,15 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	return reg
 }
 
-func (r *DefaultConnectionRegistry) AddConnection(conn Connection) Connection {
-	conn.SetOnClose(r.onClose)
+func (r *DefaultConnectionRegistry) AddConnection(
+	ctx context.Context,
+	ws *websocket.Conn,
+	cb onMessage,
+) Connection {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	conn := NewConnection(ctx, ws, cb, r.onClose)
 	r.connections[conn.ID()] = conn
 
 	return conn
@@ -63,6 +71,7 @@ type Connection interface {
 	Context() context.Context
 	ID() string
 	SetOnClose(chan<- string)
+	HandleRequests()
 }
 
 type Conn struct {
@@ -77,14 +86,21 @@ type Conn struct {
 
 type onMessage func(conn Connection, data []byte)
 
-func NewConnection(ctx context.Context, ws *websocket.Conn) *Conn {
+func NewConnection(
+	ctx context.Context,
+	ws *websocket.Conn,
+	cb onMessage,
+	onClose chan<- string,
+) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
 
 	return &Conn{
-		ws:        ws,
-		id:        uuid.New().String(),
-		ctx:       ctx,
-		ctxCancel: cancel,
+		ws:          ws,
+		id:          uuid.New().String(),
+		ctx:         ctx,
+		ctxCancel:   cancel,
+		onMessageCB: cb,
+		onClose:     onClose,
 	}
 }
 
@@ -112,7 +128,7 @@ func (c *Conn) SetOnClose(onClose chan<- string) {
 	c.onClose = onClose
 }
 
-func (c *Conn) HandleRequest() {
+func (c *Conn) HandleRequests() {
 	defer c.Close()
 
 	for c.ctx.Err() == nil {
