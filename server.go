@@ -13,6 +13,9 @@ type Server struct {
 	channels []Channel
 }
 
+// NewServer creates new instance of Wasabi server
+// port - port to listen on
+// returns new instance of Server
 func NewServer(port uint16) *Server {
 
 	return &Server{
@@ -21,10 +24,14 @@ func NewServer(port uint16) *Server {
 	}
 }
 
+// AddChannel adds new channel to server
 func (s *Server) AddChannel(channel Channel) {
 	s.channels = append(s.channels, channel)
 }
 
+// Run starts server
+// ctx - context
+// returns error if any
 func (s *Server) Run(ctx context.Context) error {
 	listen := ":" + strconv.Itoa(int(s.port))
 
@@ -37,7 +44,7 @@ func (s *Server) Run(ctx context.Context) error {
 		channel.SetContext(execCtx)
 		mux.Handle(
 			channel.Path(),
-			channel.HTTPHandler(),
+			channel.Handler(),
 		)
 	}
 
