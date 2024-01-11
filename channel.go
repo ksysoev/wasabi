@@ -49,7 +49,7 @@ func NewDefaultChannel(
 	}
 }
 
-// Path returns channel path
+// Path returns url path for channel
 func (c *DefaultChannel) Path() string {
 	return c.path
 }
@@ -69,7 +69,7 @@ func (c *DefaultChannel) Handler() http.Handler {
 		conn.HandleRequests()
 	})
 
-	return c.setContext(c.useMiddleware(saveCtx(wsHandler)))
+	return c.setContext(c.wrapMiddleware(saveCtx(wsHandler)))
 }
 
 // SetContext sets context for channel
@@ -97,7 +97,7 @@ func handleRequestError(err error, conn Connection) {
 }
 
 // useMiddleware applies middlewares to handler
-func (c *DefaultChannel) useMiddleware(handler http.Handler) http.Handler {
+func (c *DefaultChannel) wrapMiddleware(handler http.Handler) http.Handler {
 	for i := len(c.middlewares) - 1; i >= 0; i-- {
 		handler = c.middlewares[i](handler)
 	}
