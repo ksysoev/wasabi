@@ -1,8 +1,10 @@
 package wasabi
 
+import "log/slog"
+
 // Dispatcher is interface for dispatchers
 type Dispatcher interface {
-	Dispatch(conn Connection, req Request) error
+	Dispatch(conn Connection, data []byte)
 }
 
 // PipeDispatcher is a dispatcher that does not support any routing of requests
@@ -10,6 +12,7 @@ type Dispatcher interface {
 type PipeDispatcher struct {
 	backend     Backend
 	middlewares []RequestMiddlewere
+	reqParser   RequestParser
 }
 
 // RequestHandler is interface for request handlers
@@ -21,13 +24,20 @@ type RequestHandler interface {
 type RequestMiddlewere func(next RequestHandler) RequestHandler
 
 // NewPipeDispatcher creates new instance of PipeDispatcher
-func NewPipeDispatcher(backend Backend) *PipeDispatcher {
-	return &PipeDispatcher{backend: backend}
+func NewPipeDispatcher(backend Backend, reqParser RequestParser) *PipeDispatcher {
+	return &PipeDispatcher{backend: backend, reqParser: reqParser}
 }
 
 // Dispatch dispatches request to backend
-func (d *PipeDispatcher) Dispatch(conn Connection, req Request) error {
-	return d.useMiddleware(d.backend).Handle(conn, req)
+func (d *PipeDispatcher) Dispatch(conn Connection, data []byte) {
+	req, err := d.reqParser.Parse(data)
+	if err != nil {
+		handleRequestError(err, conn)
+	}
+
+	req = req.WithContext(conn.Context())
+
+	d.useMiddleware(d.backend).Handle(conn, req)
 }
 
 // Use adds middlewere to dispatcher
@@ -42,4 +52,18 @@ func (d *PipeDispatcher) useMiddleware(endpoint RequestHandler) RequestHandler {
 	}
 
 	return endpoint
+}
+
+// onMessage handles incoming messages
+func handleRequestError(err error, conn Connection) {
+	slog.Debug("Error parsing request: " + err.Error())
+	resp := ResponseFromError(err)
+
+	data, err := resp.String()
+	if err != nil {
+		slog.Debug("Error creating response: " + err.Error())
+		return
+	}
+
+	conn.Send([]byte(data))
 }

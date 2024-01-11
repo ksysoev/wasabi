@@ -13,10 +13,10 @@ func main() {
 	backend := wasabi.NewBackend("http://localhost:8081")
 
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
-	dispatcher := wasabi.NewPipeDispatcher(backend)
+	dispatcher := wasabi.NewPipeDispatcher(backend, &wasabi.JSONRPCRequestParser{})
 
 	server := wasabi.NewServer(8080)
-	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry, &wasabi.JSONRPCRequestParser{})
+	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry)
 	server.AddChannel(channel)
 
 	err := server.Run(context.Background())

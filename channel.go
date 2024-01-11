@@ -2,7 +2,6 @@ package wasabi
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"golang.org/x/net/websocket"
@@ -23,7 +22,6 @@ type DefaultChannel struct {
 	path         string
 	disptacher   Dispatcher
 	connRegistry ConnectionRegistry
-	reqParser    RequestParser
 	ctx          context.Context
 	middlewares  []Middlewere
 }
@@ -38,13 +36,11 @@ func NewDefaultChannel(
 	path string,
 	dispatcher Dispatcher,
 	connRegistry ConnectionRegistry,
-	reqParser RequestParser,
 ) *DefaultChannel {
 	return &DefaultChannel{
 		path:         path,
 		disptacher:   dispatcher,
 		connRegistry: connRegistry,
-		reqParser:    reqParser,
 		middlewares:  make([]Middlewere, 0),
 	}
 }
@@ -65,7 +61,7 @@ func (c *DefaultChannel) Handler() http.Handler {
 	}
 
 	wsHandler := websocket.Handler(func(ws *websocket.Conn) {
-		conn := c.connRegistry.AddConnection(ctx, ws, c.onMessage)
+		conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch)
 		conn.HandleRequests()
 	})
 
@@ -82,20 +78,6 @@ func (c *DefaultChannel) Use(middlewere Middlewere) {
 	c.middlewares = append(c.middlewares, middlewere)
 }
 
-// onMessage handles incoming messages
-func handleRequestError(err error, conn Connection) {
-	slog.Debug("Error parsing request: " + err.Error())
-	resp := ResponseFromError(err)
-
-	data, err := resp.String()
-	if err != nil {
-		slog.Debug("Error creating response: " + err.Error())
-		return
-	}
-
-	conn.Send([]byte(data))
-}
-
 // useMiddleware applies middlewares to handler
 func (c *DefaultChannel) wrapMiddleware(handler http.Handler) http.Handler {
 	for i := len(c.middlewares) - 1; i >= 0; i-- {
@@ -110,18 +92,4 @@ func (c *DefaultChannel) setContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r.WithContext(c.ctx))
 	})
-}
-
-// onMessage handles incoming messages
-func (c *DefaultChannel) onMessage(conn Connection, data []byte) {
-	req, err := c.reqParser.Parse(data)
-	if err != nil {
-		handleRequestError(err, conn)
-	}
-
-	req = req.WithContext(conn.Context())
-
-	if err := c.disptacher.Dispatch(conn, req); err != nil {
-		handleRequestError(err, conn)
-	}
 }
