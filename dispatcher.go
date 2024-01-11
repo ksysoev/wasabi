@@ -11,8 +11,8 @@ type Dispatcher interface {
 // but for single backend API gateways is enough
 type PipeDispatcher struct {
 	backend     Backend
-	middlewares []RequestMiddlewere
 	reqParser   RequestParser
+	middlewares []RequestMiddlewere
 }
 
 // RequestHandler is interface for request handlers
@@ -37,7 +37,10 @@ func (d *PipeDispatcher) Dispatch(conn Connection, data []byte) {
 
 	req = req.WithContext(conn.Context())
 
-	d.useMiddleware(d.backend).Handle(conn, req)
+	err = d.useMiddleware(d.backend).Handle(conn, req)
+	if err != nil {
+		handleRequestError(err, conn)
+	}
 }
 
 // Use adds middlewere to dispatcher
@@ -65,5 +68,9 @@ func handleRequestError(err error, conn Connection) {
 		return
 	}
 
-	conn.Send([]byte(data))
+	err = conn.Send([]byte(data))
+	if err != nil {
+		slog.Debug("Error sending response: " + err.Error())
+		return
+	}
 }

@@ -10,21 +10,23 @@ type Backend interface {
 	Handle(conn Connection, r Request) error
 }
 
-type HttpBackend struct {
+type HTTPBackend struct {
 	endpoint string
 }
 
-func NewBackend(endpoint string) *HttpBackend {
-	return &HttpBackend{endpoint: endpoint}
+func NewBackend(endpoint string) *HTTPBackend {
+	return &HTTPBackend{endpoint: endpoint}
 }
 
-func (b *HttpBackend) Handle(conn Connection, r Request) error {
+func (b *HTTPBackend) Handle(conn Connection, r Request) error {
 	req, ok := r.(*JSONRPCRequest)
 	if !ok {
 		return nil
 	}
+
 	body := bytes.NewBufferString(req.Data)
 	httpReq, err := http.NewRequest("POST", b.endpoint, body)
+
 	if err != nil {
 		return err
 	}
@@ -33,6 +35,7 @@ func (b *HttpBackend) Handle(conn Connection, r Request) error {
 
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
+
 	if err != nil {
 		slog.Error("Error sending request", "error", err)
 		return err
@@ -46,6 +49,7 @@ func (b *HttpBackend) Handle(conn Connection, r Request) error {
 		slog.Error("Error reading response body", "error", err)
 		return err
 	}
+
 	apiResp := NewResponse(req.ID, respBody.String())
 	data, err := apiResp.String()
 

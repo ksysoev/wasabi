@@ -11,26 +11,24 @@ import (
 
 type MockDispatcher struct{}
 
-func (d *MockDispatcher) Dispatch(conn Connection, data []byte) {
-	return
-}
+func (d *MockDispatcher) Dispatch(_ Connection, _ []byte) {}
 
 type MockConnectionRegistry struct{}
 
 func (r *MockConnectionRegistry) AddConnection(
-	ctx context.Context,
-	ws *websocket.Conn,
-	cb onMessage,
+	_ context.Context,
+	_ *websocket.Conn,
+	_ onMessage,
 ) Connection {
 	return nil
 }
-func (r *MockConnectionRegistry) GetConnection(id string) Connection {
+func (r *MockConnectionRegistry) GetConnection(_ string) Connection {
 	return nil
 }
 
 type MockRequestParser struct{}
 
-func (p *MockRequestParser) Parse(data []byte) (Request, error) {
+func (p *MockRequestParser) Parse(_ []byte) (Request, error) {
 	return nil, nil
 }
 
@@ -161,20 +159,20 @@ func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
 	// Create a mock handler
-
 	var ctx context.Context
+
 	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx = r.Context()
 	})
 
 	// Create a mock request
-	mockRequest := httptest.NewRequest(http.MethodGet, "/", nil)
+	mockRequest := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 
 	// Create a mock response recorder
 	mockResponseRecorder := httptest.NewRecorder()
 
 	// Set the context for the channel
-	channel.SetContext(context.WithValue(context.Background(), "test", "test"))
+	channel.SetContext(context.WithValue(context.Background(), struct{ key string }{"test"}, "test"))
 
 	// Wrap the mock handler with the setContext middleware
 	wrappedHandler := channel.setContext(mockHandler)

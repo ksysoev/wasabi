@@ -53,6 +53,7 @@ func (c *DefaultChannel) Path() string {
 // Handler returns http.Handler for channel
 func (c *DefaultChannel) Handler() http.Handler {
 	var ctx context.Context
+
 	saveCtx := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx = r.Context()

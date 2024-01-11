@@ -18,11 +18,11 @@ type RequestParser interface {
 }
 
 type JSONRPCRequest struct {
-	Data         string
 	orginReq     *RPCRequest
+	ctx          context.Context
+	Data         string
 	ID           string
 	ConnectionID string
-	ctx          context.Context
 }
 
 type RPCRequest struct {
@@ -85,5 +85,6 @@ func (r *JSONRPCRequest) WithContext(ctx context.Context) Request {
 	// for now we will just set the context and return original request
 	// but I should think about it
 	r.ctx = ctx
+
 	return r
 }

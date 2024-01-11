@@ -24,8 +24,8 @@ type ConnectionRegistry interface {
 // DefaultConnectionRegistry is default implementation of ConnectionRegistry
 type DefaultConnectionRegistry struct {
 	connections map[string]Connection
-	mu          sync.RWMutex
 	onClose     chan string
+	mu          sync.RWMutex
 }
 
 // NewDefaultConnectionRegistry creates new instance of DefaultConnectionRegistry
@@ -82,13 +82,13 @@ type Connection interface {
 
 // Conn is default implementation of Connection
 type Conn struct {
-	id          string
 	ws          *websocket.Conn
 	ctx         context.Context
-	isClosed    atomic.Bool
 	onMessageCB onMessage
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
+	id          string
+	isClosed    atomic.Bool
 }
 
 // onMessage is type for onMessage callback
@@ -139,6 +139,7 @@ func (c *Conn) HandleRequests() {
 			if err.Error() == "EOF" {
 				slog.Debug("Connection closed")
 				c.close()
+
 				return
 			}
 
@@ -146,12 +147,15 @@ func (c *Conn) HandleRequests() {
 				// Unexpectedkly large message received
 				// it's probably more safe to close connection
 				c.close()
+
 				return
 			}
 
 			slog.Info("Error reading message: " + err.Error())
+
 			continue
 		}
+
 		go c.onMessageCB(c, data)
 	}
 }

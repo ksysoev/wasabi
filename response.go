@@ -16,11 +16,11 @@ type RPCResponse struct {
 }
 
 type RPCError struct {
-	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
-func NewResponse(id string, data string) *JSONRPCResponse {
+func NewResponse(id, data string) *JSONRPCResponse {
 	return &JSONRPCResponse{id: id, data: data, isError: false}
 }
 

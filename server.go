@@ -4,20 +4,25 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"golang.org/x/exp/slog"
 )
 
+const (
+	ReadHeaderTimeout = 3 * time.Second
+	ReadTimeout       = 30 * time.Second
+)
+
 type Server struct {
-	port     uint16
 	channels []Channel
+	port     uint16
 }
 
 // NewServer creates new instance of Wasabi server
 // port - port to listen on
 // returns new instance of Server
 func NewServer(port uint16) *Server {
-
 	return &Server{
 		port:     port,
 		channels: make([]Channel, 0, 1),
@@ -50,7 +55,14 @@ func (s *Server) Run(ctx context.Context) error {
 
 	slog.Info("Starting app server on " + listen)
 
-	err := http.ListenAndServe(listen, mux)
+	server := &http.Server{
+		Addr:              listen,
+		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		Handler:           mux,
+	}
+
+	err := server.ListenAndServe()
 	if err != nil {
 		return err
 	}
