@@ -19,12 +19,8 @@ func NewBackend(endpoint string) *HTTPBackend {
 }
 
 func (b *HTTPBackend) Handle(conn Connection, r Request) error {
-	req, ok := r.(*JSONRPCRequest)
-	if !ok {
-		return nil
-	}
-
-	body := bytes.NewBufferString(req.Data)
+	req := string(r.Data())
+	body := bytes.NewBufferString(req)
 	httpReq, err := http.NewRequest("POST", b.endpoint, body)
 
 	if err != nil {
@@ -50,13 +46,5 @@ func (b *HTTPBackend) Handle(conn Connection, r Request) error {
 		return err
 	}
 
-	apiResp := NewResponse(req.ID, respBody.String())
-	data, err := apiResp.String()
-
-	if err != nil {
-		slog.Error("Error creating response", "error", err)
-		return err
-	}
-
-	return conn.Send([]byte(data))
+	return conn.Send(respBody.Bytes())
 }

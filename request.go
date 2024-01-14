@@ -2,80 +2,41 @@ package wasabi
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 )
 
 type Request interface {
-	String() (string, error)
+	Data() []byte
 	RoutingKey() string
 	Context() context.Context
 	WithContext(ctx context.Context) Request
 }
 
-type RequestParser interface {
-	Parse(data []byte) (Request, error)
+type RawRequest struct {
+	ctx  context.Context
+	data []byte
 }
 
-type JSONRPCRequest struct {
-	orginReq     *RPCRequest
-	ctx          context.Context
-	Data         string
-	ID           string
-	ConnectionID string
-}
-
-type RPCRequest struct {
-	JSONRPC string `json:"jsonrpc"`
-	Method  string `json:"method"`
-	Params  any    `json:"params,omitempty"`
-	// TODO make work with string and numbers
-	ID string `json:"id"`
-}
-type JSONRPCRequestParser struct{}
-
-func (j *JSONRPCRequestParser) Parse(data []byte) (Request, error) {
-	msg := string(data)
-
-	originReq, err := parseRequest(msg)
-
-	if err != nil {
-		return nil, err
+func NewRawRequest(ctx context.Context, data []byte) *RawRequest {
+	if ctx == nil {
+		panic("nil context")
 	}
 
-	return &JSONRPCRequest{
-		ID:       originReq.ID,
-		Data:     msg,
-		orginReq: originReq,
-	}, nil
+	return &RawRequest{ctx: ctx, data: data}
 }
 
-func parseRequest(data string) (*RPCRequest, error) {
-	var req RPCRequest
-	if err := json.Unmarshal([]byte(data), &req); err != nil {
-		return nil, err
-	}
-
-	if req.JSONRPC != "2.0" {
-		return nil, fmt.Errorf("invalid JSON-RPC version: %s", req.JSONRPC)
-	}
-
-	return &req, nil
+func (r *RawRequest) Data() []byte {
+	return r.data
 }
 
-func (r *JSONRPCRequest) String() (string, error) {
-	return r.Data, nil
+func (r *RawRequest) RoutingKey() string {
+	return ""
 }
 
-func (r *JSONRPCRequest) RoutingKey() string {
-	return r.orginReq.Method
-}
-
-func (r *JSONRPCRequest) Context() context.Context {
+func (r *RawRequest) Context() context.Context {
 	return r.ctx
 }
 
-func (r *JSONRPCRequest) WithContext(ctx context.Context) Request {
+func (r *RawRequest) WithContext(ctx context.Context) Request {
 	if ctx == nil {
 		panic("nil context")
 	}

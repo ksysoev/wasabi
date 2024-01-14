@@ -11,7 +11,6 @@ type Dispatcher interface {
 // but for single backend API gateways is enough
 type PipeDispatcher struct {
 	backend     Backend
-	reqParser   RequestParser
 	middlewares []RequestMiddlewere
 }
 
@@ -24,22 +23,17 @@ type RequestHandler interface {
 type RequestMiddlewere func(next RequestHandler) RequestHandler
 
 // NewPipeDispatcher creates new instance of PipeDispatcher
-func NewPipeDispatcher(backend Backend, reqParser RequestParser) *PipeDispatcher {
-	return &PipeDispatcher{backend: backend, reqParser: reqParser}
+func NewPipeDispatcher(backend Backend) *PipeDispatcher {
+	return &PipeDispatcher{backend: backend}
 }
 
 // Dispatch dispatches request to backend
 func (d *PipeDispatcher) Dispatch(conn Connection, data []byte) {
-	req, err := d.reqParser.Parse(data)
-	if err != nil {
-		handleRequestError(err, conn)
-	}
+	req := NewRawRequest(conn.Context(), data)
 
-	req = req.WithContext(conn.Context())
-
-	err = d.useMiddleware(d.backend).Handle(conn, req)
+	err := d.useMiddleware(d.backend).Handle(conn, req)
 	if err != nil {
-		handleRequestError(err, conn)
+		slog.Error("Error handling request: " + err.Error())
 	}
 }
 
@@ -55,22 +49,4 @@ func (d *PipeDispatcher) useMiddleware(endpoint RequestHandler) RequestHandler {
 	}
 
 	return endpoint
-}
-
-// onMessage handles incoming messages
-func handleRequestError(err error, conn Connection) {
-	slog.Debug("Error parsing request: " + err.Error())
-	resp := ResponseFromError(err)
-
-	data, err := resp.String()
-	if err != nil {
-		slog.Debug("Error creating response: " + err.Error())
-		return
-	}
-
-	err = conn.Send([]byte(data))
-	if err != nil {
-		slog.Debug("Error sending response: " + err.Error())
-		return
-	}
 }
