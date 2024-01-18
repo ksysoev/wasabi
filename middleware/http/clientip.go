@@ -7,12 +7,6 @@ import (
 	"strings"
 )
 
-type ContextKey uint
-
-const (
-	ClientIP ContextKey = iota
-)
-
 type Provider uint8
 
 const (
