@@ -16,7 +16,7 @@ type ConnectionRegistry interface {
 	AddConnection(
 		ctx context.Context,
 		ws *websocket.Conn,
-		cb onMessage,
+		cb OnMessage,
 	) Connection
 	GetConnection(id string) Connection
 }
@@ -44,7 +44,7 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 func (r *DefaultConnectionRegistry) AddConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
-	cb onMessage,
+	cb OnMessage,
 ) Connection {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -84,21 +84,21 @@ type Connection interface {
 type Conn struct {
 	ws          *websocket.Conn
 	ctx         context.Context
-	onMessageCB onMessage
+	onMessageCB OnMessage
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
 	id          string
 	isClosed    atomic.Bool
 }
 
-// onMessage is type for onMessage callback
-type onMessage func(conn Connection, data []byte)
+// OnMessage is type for OnMessage callback
+type OnMessage func(conn Connection, data []byte)
 
 // NewConnection creates new instance of websocket connection
 func NewConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
-	cb onMessage,
+	cb OnMessage,
 	onClose chan<- string,
 ) *Conn {
 	ctx, cancel := context.WithCancel(ctx)

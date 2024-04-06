@@ -5,37 +5,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"golang.org/x/net/websocket"
 )
-
-type MockDispatcher struct{}
-
-func (d *MockDispatcher) Dispatch(_ Connection, _ []byte) {}
-
-type MockConnectionRegistry struct{}
-
-func (r *MockConnectionRegistry) AddConnection(
-	_ context.Context,
-	_ *websocket.Conn,
-	_ onMessage,
-) Connection {
-	return nil
-}
-func (r *MockConnectionRegistry) GetConnection(_ string) Connection {
-	return nil
-}
-
-type MockRequestParser struct{}
-
-func (p *MockRequestParser) Parse(_ []byte) (Request, error) {
-	return nil, nil
-}
 
 func TestNewDefaultChannel(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
@@ -57,8 +32,8 @@ func TestNewDefaultChannel(t *testing.T) {
 }
 func TestDefaultChannel_Path(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
@@ -68,8 +43,8 @@ func TestDefaultChannel_Path(t *testing.T) {
 }
 func TestDefaultChannel_Handler(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 	channel.SetContext(context.Background())
@@ -83,8 +58,8 @@ func TestDefaultChannel_Handler(t *testing.T) {
 }
 func TestDefaultChannel_SetContext(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
@@ -97,8 +72,8 @@ func TestDefaultChannel_SetContext(t *testing.T) {
 }
 func TestDefaultChannel_Use(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
@@ -117,8 +92,8 @@ func TestDefaultChannel_Use(t *testing.T) {
 
 func TestDefaultChannel_wrapMiddleware(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
@@ -153,8 +128,8 @@ func TestDefaultChannel_wrapMiddleware(t *testing.T) {
 }
 func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
 	path := "/test/path"
-	dispatcher := &MockDispatcher{}
-	connRegistry := &MockConnectionRegistry{}
+	dispatcher := NewMockDispatcher(t)
+	connRegistry := NewMockConnectionRegistry(t)
 
 	channel := NewDefaultChannel(path, dispatcher, connRegistry)
 
