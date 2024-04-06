@@ -21,6 +21,14 @@ type RequestHandler interface {
 // RequestMiddlewere is interface for request middleweres
 type RequestMiddlewere func(next RequestHandler) RequestHandler
 
+// RequestHandlerFunc is a function that implements RequestHandler interface
+type RequestHandlerFunc func(conn Connection, req Request) error
+
+// Handle implements RequestHandler interface
+func (f RequestHandlerFunc) Handle(conn Connection, req Request) error {
+	return f(conn, req)
+}
+
 // NewPipeDispatcher creates new instance of PipeDispatcher
 func NewPipeDispatcher(backend Backend) *PipeDispatcher {
 	return &PipeDispatcher{backend: backend}
