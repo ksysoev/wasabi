@@ -1,0 +1,9 @@
+with-expecter: true
+inpackage: true
+dir: ./
+mock-build-tags: "!compile"
+packages:
+  github.com/ksysoev/wasabi:
+    interfaces:
+      Dispatcher:
+      ConnectionRegistry:
