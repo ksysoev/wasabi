@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/ksysoev/wasabi"
@@ -15,7 +17,18 @@ const (
 func main() {
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := wasabi.NewBackend("http://localhost:8081")
+	backend := wasabi.NewBackend(func(req wasabi.Request) (*http.Request, error) {
+		bodyReader := bytes.NewBufferString(string(req.Data()))
+		httpReq, err := http.NewRequest("GET", "http://localhost:8080/", bodyReader)
+		if err != nil {
+			return nil, err
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		return httpReq, nil
+	})
+
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
 	dispatcher := wasabi.NewPipeDispatcher(backend)
 	server := wasabi.NewServer(Port)

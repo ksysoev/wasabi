@@ -7,11 +7,9 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// Channel is interface for channels
-type Channel interface {
-	Path() string
-	SetContext(ctx context.Context)
-	Handler() http.Handler
+// Dispatcher is interface for dispatchers
+type Dispatcher interface {
+	Dispatch(conn Connection, data []byte)
 }
 
 // Middlewere is interface for middlewares

@@ -2,9 +2,8 @@ package wasabi
 
 import "log/slog"
 
-// Dispatcher is interface for dispatchers
-type Dispatcher interface {
-	Dispatch(conn Connection, data []byte)
+type Backend interface {
+	Handle(conn Connection, r Request) error
 }
 
 // PipeDispatcher is a dispatcher that does not support any routing of requests

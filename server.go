@@ -9,6 +9,13 @@ import (
 	"golang.org/x/exp/slog"
 )
 
+// Channel is interface for channels
+type Channel interface {
+	Path() string
+	SetContext(ctx context.Context)
+	Handler() http.Handler
+}
+
 const (
 	ReadHeaderTimeout = 3 * time.Second
 	ReadTimeout       = 30 * time.Second
