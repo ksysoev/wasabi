@@ -12,7 +12,7 @@ import (
 
 func TestHTTPBackend_Handle(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`OK`))
+		_, _ = w.Write([]byte(`OK`))
 	}))
 	defer server.Close()
 
