@@ -7,10 +7,10 @@ import (
 
 type token struct{}
 
-func NewTrottlerMiddleware(limit uint) func(next dispatch.RequestHandler) dispatch.RequestHandler {
+func NewTrottlerMiddleware(limit uint) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	sem := make(chan token, limit)
 
-	return func(next dispatch.RequestHandler) dispatch.RequestHandler {
+	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			select {
 			case sem <- token{}:

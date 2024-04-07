@@ -42,3 +42,8 @@ type Connection interface {
 	ID() string
 	HandleRequests()
 }
+
+// RequestHandler is interface for request handlers
+type RequestHandler interface {
+	Handle(conn Connection, req Request) error
+}

@@ -6,5 +6,8 @@ mock-build-tags: "!compile"
 packages:
   github.com/ksysoev/wasabi:
     interfaces:
-      Dispatcher:
       ConnectionRegistry:
+      Dispatcher:
+      Backend:
+      RequestHandler:
+      Connection:

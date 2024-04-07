@@ -34,7 +34,7 @@ func (d *PipeDispatcher) Use(middlewere RequestMiddlewere) {
 }
 
 // useMiddleware prepare request handler with middleweres chain
-func (d *PipeDispatcher) useMiddleware(endpoint RequestHandler) RequestHandler {
+func (d *PipeDispatcher) useMiddleware(endpoint wasabi.RequestHandler) wasabi.RequestHandler {
 	for i := len(d.middlewares) - 1; i >= 0; i-- {
 		endpoint = d.middlewares[i](endpoint)
 	}
