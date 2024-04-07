@@ -1,6 +1,7 @@
 with-expecter: true
-inpackage: true
-dir: ./
+inpackage: false
+dir: ./mocks
+outpkg: mocks
 mock-build-tags: "!compile"
 packages:
   github.com/ksysoev/wasabi:

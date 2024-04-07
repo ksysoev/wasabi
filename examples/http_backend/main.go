@@ -8,6 +8,9 @@ import (
 	"os"
 
 	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/backend"
+	"github.com/ksysoev/wasabi/channel"
+	"github.com/ksysoev/wasabi/dispatch"
 	"github.com/ksysoev/wasabi/middleware/request"
 )
 
@@ -18,7 +21,7 @@ const (
 func main() {
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := wasabi.NewBackend(func(req wasabi.Request) (*http.Request, error) {
+	backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
 		httpReq, err := http.NewRequest("GET", "http://localhost:8081/", bodyReader)
 		if err != nil {
@@ -44,13 +47,13 @@ func main() {
 		return nil
 	})
 
-	connRegistry := wasabi.NewDefaultConnectionRegistry()
-	dispatcher := wasabi.NewPipeDispatcher(backend)
+	connRegistry := channel.NewDefaultConnectionRegistry()
+	dispatcher := dispatch.NewPipeDispatcher(backend)
 	dispatcher.Use(ErrHandler)
 	dispatcher.Use(request.NewTrottlerMiddleware(10))
 
 	server := wasabi.NewServer(Port)
-	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry)
+	channel := channel.NewDefaultChannel("/", dispatcher, connRegistry)
 
 	server.AddChannel(channel)
 

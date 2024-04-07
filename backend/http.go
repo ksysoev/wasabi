@@ -1,11 +1,11 @@
-package wasabi
+package backend
 
 import (
 	"bytes"
 	"net/http"
-)
 
-type RequestFactory func(req Request) (*http.Request, error)
+	"github.com/ksysoev/wasabi"
+)
 
 type HTTPBackend struct {
 	factory RequestFactory
@@ -19,7 +19,7 @@ func NewBackend(factory RequestFactory) *HTTPBackend {
 	}
 }
 
-func (b *HTTPBackend) Handle(conn Connection, r Request) error {
+func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	httpReq, err := b.factory(r)
 	if err != nil {
 		return err

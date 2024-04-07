@@ -1,15 +1,10 @@
-package wasabi
+package dispatch
 
 import (
 	"context"
-)
 
-type Request interface {
-	Data() []byte
-	RoutingKey() string
-	Context() context.Context
-	WithContext(ctx context.Context) Request
-}
+	"github.com/ksysoev/wasabi"
+)
 
 type RawRequest struct {
 	ctx  context.Context
@@ -36,7 +31,7 @@ func (r *RawRequest) Context() context.Context {
 	return r.ctx
 }
 
-func (r *RawRequest) WithContext(ctx context.Context) Request {
+func (r *RawRequest) WithContext(ctx context.Context) wasabi.Request {
 	if ctx == nil {
 		panic("nil context")
 	}

@@ -1,4 +1,4 @@
-package wasabi
+package channel
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
+
+	"github.com/ksysoev/wasabi"
 )
 
 var (
@@ -17,19 +19,9 @@ var (
 	ErrConnectionClosed = errors.New("connection is closed")
 )
 
-// ConnectionRegistry is interface for connection registries
-type ConnectionRegistry interface {
-	AddConnection(
-		ctx context.Context,
-		ws *websocket.Conn,
-		cb OnMessage,
-	) Connection
-	GetConnection(id string) Connection
-}
-
 // DefaultConnectionRegistry is default implementation of ConnectionRegistry
 type DefaultConnectionRegistry struct {
-	connections map[string]Connection
+	connections map[string]wasabi.Connection
 	onClose     chan string
 	mu          sync.RWMutex
 }
@@ -37,7 +29,7 @@ type DefaultConnectionRegistry struct {
 // NewDefaultConnectionRegistry creates new instance of DefaultConnectionRegistry
 func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 	reg := &DefaultConnectionRegistry{
-		connections: make(map[string]Connection),
+		connections: make(map[string]wasabi.Connection),
 		onClose:     make(chan string),
 	}
 
@@ -50,8 +42,8 @@ func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
 func (r *DefaultConnectionRegistry) AddConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
-	cb OnMessage,
-) Connection {
+	cb wasabi.OnMessage,
+) wasabi.Connection {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -62,7 +54,7 @@ func (r *DefaultConnectionRegistry) AddConnection(
 }
 
 // GetConnection returns connection by id
-func (r *DefaultConnectionRegistry) GetConnection(id string) Connection {
+func (r *DefaultConnectionRegistry) GetConnection(id string) wasabi.Connection {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -78,34 +70,23 @@ func (r *DefaultConnectionRegistry) handleClose() {
 	}
 }
 
-// Connection is interface for connections
-type Connection interface {
-	Send(msg []byte) error
-	Context() context.Context
-	ID() string
-	HandleRequests()
-}
-
 // Conn is default implementation of Connection
 type Conn struct {
 	ws          *websocket.Conn
 	reqWG       *sync.WaitGroup
 	ctx         context.Context
-	onMessageCB OnMessage
+	onMessageCB wasabi.OnMessage
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
 	id          string
 	isClosed    atomic.Bool
 }
 
-// OnMessage is type for OnMessage callback
-type OnMessage func(conn Connection, data []byte)
-
 // NewConnection creates new instance of websocket connection
 func NewConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
-	cb OnMessage,
+	cb wasabi.OnMessage,
 	onClose chan<- string,
 ) *Conn {
 	ctx, cancel := context.WithCancel(ctx)

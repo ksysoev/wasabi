@@ -1,41 +1,25 @@
-package wasabi
+package dispatch
 
-import "log/slog"
+import (
+	"log/slog"
 
-type Backend interface {
-	Handle(conn Connection, r Request) error
-}
+	"github.com/ksysoev/wasabi"
+)
 
 // PipeDispatcher is a dispatcher that does not support any routing of requests
 // but for single backend API gateways is enough
 type PipeDispatcher struct {
-	backend     Backend
+	backend     wasabi.Backend
 	middlewares []RequestMiddlewere
 }
 
-// RequestHandler is interface for request handlers
-type RequestHandler interface {
-	Handle(conn Connection, req Request) error
-}
-
-// RequestMiddlewere is interface for request middleweres
-type RequestMiddlewere func(next RequestHandler) RequestHandler
-
-// RequestHandlerFunc is a function that implements RequestHandler interface
-type RequestHandlerFunc func(conn Connection, req Request) error
-
-// Handle implements RequestHandler interface
-func (f RequestHandlerFunc) Handle(conn Connection, req Request) error {
-	return f(conn, req)
-}
-
 // NewPipeDispatcher creates new instance of PipeDispatcher
-func NewPipeDispatcher(backend Backend) *PipeDispatcher {
+func NewPipeDispatcher(backend wasabi.Backend) *PipeDispatcher {
 	return &PipeDispatcher{backend: backend}
 }
 
 // Dispatch dispatches request to backend
-func (d *PipeDispatcher) Dispatch(conn Connection, data []byte) {
+func (d *PipeDispatcher) Dispatch(conn wasabi.Connection, data []byte) {
 	req := NewRawRequest(conn.Context(), data)
 
 	err := d.useMiddleware(d.backend).Handle(conn, req)

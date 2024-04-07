@@ -1,14 +1,17 @@
 package request
 
-import "github.com/ksysoev/wasabi"
+import (
+	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/dispatch"
+)
 
 type token struct{}
 
-func NewTrottlerMiddleware(limit uint) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+func NewTrottlerMiddleware(limit uint) func(next dispatch.RequestHandler) dispatch.RequestHandler {
 	sem := make(chan token, limit)
 
-	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
-		return wasabi.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	return func(next dispatch.RequestHandler) dispatch.RequestHandler {
+		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			select {
 			case sem <- token{}:
 				defer func() { <-sem }()

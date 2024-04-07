@@ -2,12 +2,14 @@
 
 //go:build !compile
 
-package wasabi
+package mocks
 
 import (
 	context "context"
 
+	wasabi "github.com/ksysoev/wasabi"
 	mock "github.com/stretchr/testify/mock"
+
 	websocket "golang.org/x/net/websocket"
 )
 
@@ -25,19 +27,19 @@ func (_m *MockConnectionRegistry) EXPECT() *MockConnectionRegistry_Expecter {
 }
 
 // AddConnection provides a mock function with given fields: ctx, ws, cb
-func (_m *MockConnectionRegistry) AddConnection(ctx context.Context, ws *websocket.Conn, cb OnMessage) Connection {
+func (_m *MockConnectionRegistry) AddConnection(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage) wasabi.Connection {
 	ret := _m.Called(ctx, ws, cb)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AddConnection")
 	}
 
-	var r0 Connection
-	if rf, ok := ret.Get(0).(func(context.Context, *websocket.Conn, OnMessage) Connection); ok {
+	var r0 wasabi.Connection
+	if rf, ok := ret.Get(0).(func(context.Context, *websocket.Conn, wasabi.OnMessage) wasabi.Connection); ok {
 		r0 = rf(ctx, ws, cb)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Connection)
+			r0 = ret.Get(0).(wasabi.Connection)
 		}
 	}
 
@@ -52,42 +54,42 @@ type MockConnectionRegistry_AddConnection_Call struct {
 // AddConnection is a helper method to define mock.On call
 //   - ctx context.Context
 //   - ws *websocket.Conn
-//   - cb OnMessage
+//   - cb wasabi.OnMessage
 func (_e *MockConnectionRegistry_Expecter) AddConnection(ctx interface{}, ws interface{}, cb interface{}) *MockConnectionRegistry_AddConnection_Call {
 	return &MockConnectionRegistry_AddConnection_Call{Call: _e.mock.On("AddConnection", ctx, ws, cb)}
 }
 
-func (_c *MockConnectionRegistry_AddConnection_Call) Run(run func(ctx context.Context, ws *websocket.Conn, cb OnMessage)) *MockConnectionRegistry_AddConnection_Call {
+func (_c *MockConnectionRegistry_AddConnection_Call) Run(run func(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage)) *MockConnectionRegistry_AddConnection_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*websocket.Conn), args[2].(OnMessage))
+		run(args[0].(context.Context), args[1].(*websocket.Conn), args[2].(wasabi.OnMessage))
 	})
 	return _c
 }
 
-func (_c *MockConnectionRegistry_AddConnection_Call) Return(_a0 Connection) *MockConnectionRegistry_AddConnection_Call {
+func (_c *MockConnectionRegistry_AddConnection_Call) Return(_a0 wasabi.Connection) *MockConnectionRegistry_AddConnection_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockConnectionRegistry_AddConnection_Call) RunAndReturn(run func(context.Context, *websocket.Conn, OnMessage) Connection) *MockConnectionRegistry_AddConnection_Call {
+func (_c *MockConnectionRegistry_AddConnection_Call) RunAndReturn(run func(context.Context, *websocket.Conn, wasabi.OnMessage) wasabi.Connection) *MockConnectionRegistry_AddConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetConnection provides a mock function with given fields: id
-func (_m *MockConnectionRegistry) GetConnection(id string) Connection {
+func (_m *MockConnectionRegistry) GetConnection(id string) wasabi.Connection {
 	ret := _m.Called(id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConnection")
 	}
 
-	var r0 Connection
-	if rf, ok := ret.Get(0).(func(string) Connection); ok {
+	var r0 wasabi.Connection
+	if rf, ok := ret.Get(0).(func(string) wasabi.Connection); ok {
 		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Connection)
+			r0 = ret.Get(0).(wasabi.Connection)
 		}
 	}
 
@@ -112,12 +114,12 @@ func (_c *MockConnectionRegistry_GetConnection_Call) Run(run func(id string)) *M
 	return _c
 }
 
-func (_c *MockConnectionRegistry_GetConnection_Call) Return(_a0 Connection) *MockConnectionRegistry_GetConnection_Call {
+func (_c *MockConnectionRegistry_GetConnection_Call) Return(_a0 wasabi.Connection) *MockConnectionRegistry_GetConnection_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockConnectionRegistry_GetConnection_Call) RunAndReturn(run func(string) Connection) *MockConnectionRegistry_GetConnection_Call {
+func (_c *MockConnectionRegistry_GetConnection_Call) RunAndReturn(run func(string) wasabi.Connection) *MockConnectionRegistry_GetConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }

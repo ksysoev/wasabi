@@ -1,25 +1,18 @@
-package wasabi
+package channel
 
 import (
 	"context"
 	"net/http"
 
+	"github.com/ksysoev/wasabi"
 	"golang.org/x/net/websocket"
 )
-
-// Dispatcher is interface for dispatchers
-type Dispatcher interface {
-	Dispatch(conn Connection, data []byte)
-}
-
-// Middlewere is interface for middlewares
-type Middlewere func(http.Handler) http.Handler
 
 // DefaultChannel is default implementation of Channel
 type DefaultChannel struct {
 	path         string
-	disptacher   Dispatcher
-	connRegistry ConnectionRegistry
+	disptacher   wasabi.Dispatcher
+	connRegistry wasabi.ConnectionRegistry
 	ctx          context.Context
 	middlewares  []Middlewere
 }
@@ -32,8 +25,8 @@ type DefaultChannel struct {
 // returns new instance of DefaultChannel
 func NewDefaultChannel(
 	path string,
-	dispatcher Dispatcher,
-	connRegistry ConnectionRegistry,
+	dispatcher wasabi.Dispatcher,
+	connRegistry wasabi.ConnectionRegistry,
 ) *DefaultChannel {
 	return &DefaultChannel{
 		path:         path,
