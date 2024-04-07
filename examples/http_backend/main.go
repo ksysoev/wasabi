@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/middleware/request"
 )
 
 const (
@@ -19,7 +20,7 @@ func main() {
 
 	backend := wasabi.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
-		httpReq, err := http.NewRequest("GET", "http://localhost:8080/", bodyReader)
+		httpReq, err := http.NewRequest("GET", "http://localhost:8081/", bodyReader)
 		if err != nil {
 			return nil, err
 		}
@@ -29,8 +30,24 @@ func main() {
 		return httpReq, nil
 	})
 
+	ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
+
+		if conn.Context().Err() != nil {
+			return nil
+		}
+
+		if req.Context().Err() == nil {
+			slog.Error("Error handling request", "error", err)
+		}
+
+		conn.Send([]byte("Failed to process request: " + err.Error()))
+		return nil
+	})
+
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
 	dispatcher := wasabi.NewPipeDispatcher(backend)
+	dispatcher.Use(ErrHandler)
+
 	server := wasabi.NewServer(Port)
 	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry)
 
