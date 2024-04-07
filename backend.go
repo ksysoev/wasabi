@@ -10,18 +10,12 @@ type RequestFactory func(req Request) (*http.Request, error)
 type HTTPBackend struct {
 	factory RequestFactory
 	client  *http.Client
-	sem     chan struct{}
 }
-
-const (
-	MaxConcurrentRequests = 50
-)
 
 func NewBackend(factory RequestFactory) *HTTPBackend {
 	return &HTTPBackend{
 		factory: factory,
 		client:  &http.Client{},
-		sem:     make(chan struct{}, MaxConcurrentRequests),
 	}
 }
 
@@ -31,17 +25,7 @@ func (b *HTTPBackend) Handle(conn Connection, r Request) error {
 		return err
 	}
 
-	ctx := r.Context()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case b.sem <- struct{}{}:
-	}
-
 	resp, err := b.client.Do(httpReq)
-	<-b.sem
-
 	if err != nil {
 		return err
 	}

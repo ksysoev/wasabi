@@ -47,6 +47,7 @@ func main() {
 	connRegistry := wasabi.NewDefaultConnectionRegistry()
 	dispatcher := wasabi.NewPipeDispatcher(backend)
 	dispatcher.Use(ErrHandler)
+	dispatcher.Use(request.NewTrottlerMiddleware(10))
 
 	server := wasabi.NewServer(Port)
 	channel := wasabi.NewDefaultChannel("/", dispatcher, connRegistry)
