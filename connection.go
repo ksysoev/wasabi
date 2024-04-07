@@ -89,13 +89,13 @@ type Connection interface {
 // Conn is default implementation of Connection
 type Conn struct {
 	ws          *websocket.Conn
+	reqWG       *sync.WaitGroup
 	ctx         context.Context
 	onMessageCB OnMessage
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
 	id          string
 	isClosed    atomic.Bool
-	reqWG       *sync.WaitGroup
 }
 
 // OnMessage is type for OnMessage callback
@@ -154,6 +154,7 @@ func (c *Conn) HandleRequests() {
 		}
 
 		c.reqWG.Add(1)
+
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
 			c.onMessageCB(c, data)

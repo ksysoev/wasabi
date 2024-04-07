@@ -9,7 +9,6 @@ func NewTrottlerMiddleware(limit uint) func(next wasabi.RequestHandler) wasabi.R
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return wasabi.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
-
 			select {
 			case sem <- token{}:
 				defer func() { <-sem }()
