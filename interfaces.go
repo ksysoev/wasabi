@@ -2,6 +2,7 @@ package wasabi
 
 import (
 	"context"
+	"net/http"
 
 	"golang.org/x/net/websocket"
 )
@@ -46,4 +47,11 @@ type Connection interface {
 // RequestHandler is interface for request handlers
 type RequestHandler interface {
 	Handle(conn Connection, req Request) error
+}
+
+// Channel is interface for channels
+type Channel interface {
+	Path() string
+	SetContext(ctx context.Context)
+	Handler() http.Handler
 }

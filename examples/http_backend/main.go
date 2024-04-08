@@ -12,6 +12,7 @@ import (
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
 	"github.com/ksysoev/wasabi/middleware/request"
+	"github.com/ksysoev/wasabi/server"
 )
 
 const (
@@ -52,7 +53,7 @@ func main() {
 	dispatcher.Use(ErrHandler)
 	dispatcher.Use(request.NewTrottlerMiddleware(10))
 
-	server := wasabi.NewServer(Port)
+	server := server.NewServer(Port)
 	channel := channel.NewDefaultChannel("/", dispatcher, connRegistry)
 
 	server.AddChannel(channel)

@@ -1,20 +1,16 @@
-package wasabi
+package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
+	"github.com/ksysoev/wasabi"
 	"golang.org/x/exp/slog"
 )
-
-// Channel is interface for channels
-type Channel interface {
-	Path() string
-	SetContext(ctx context.Context)
-	Handler() http.Handler
-}
 
 const (
 	ReadHeaderTimeout = 3 * time.Second
@@ -22,8 +18,10 @@ const (
 )
 
 type Server struct {
-	channels []Channel
-	port     uint16
+	mutex     *sync.Mutex
+	channels  []wasabi.Channel
+	port      uint16
+	isRunning bool
 }
 
 // NewServer creates new instance of Wasabi server
@@ -32,12 +30,13 @@ type Server struct {
 func NewServer(port uint16) *Server {
 	return &Server{
 		port:     port,
-		channels: make([]Channel, 0, 1),
+		channels: make([]wasabi.Channel, 0, 1),
+		mutex:    &sync.Mutex{},
 	}
 }
 
 // AddChannel adds new channel to server
-func (s *Server) AddChannel(channel Channel) {
+func (s *Server) AddChannel(channel wasabi.Channel) {
 	s.channels = append(s.channels, channel)
 }
 
@@ -45,9 +44,17 @@ func (s *Server) AddChannel(channel Channel) {
 // ctx - context
 // returns error if any
 func (s *Server) Run(ctx context.Context) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if s.isRunning {
+		return fmt.Errorf("server is already running")
+	}
+
 	listen := ":" + strconv.Itoa(int(s.port))
 
 	execCtx, cancel := context.WithCancel(ctx)
+
 	defer cancel()
 
 	mux := http.NewServeMux()
@@ -69,8 +76,28 @@ func (s *Server) Run(ctx context.Context) error {
 		Handler:           mux,
 	}
 
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		<-execCtx.Done()
+
+		slog.Info("Shutting down app server on " + listen)
+
+		if err := server.Shutdown(context.Background()); err != nil {
+			slog.Error("Failed to shutdown app server", "error", err)
+		}
+
+		wg.Done()
+	}()
+
 	err := server.ListenAndServe()
-	if err != nil {
+
+	cancel()
+
+	wg.Wait()
+
+	if err != http.ErrServerClosed {
 		return err
 	}
 

@@ -12,3 +12,4 @@ packages:
       RequestHandler:
       Connection:
       Request:
+      Channel:
