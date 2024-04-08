@@ -23,39 +23,26 @@ func main() {
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
 	backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
-		bodyReader := bytes.NewBufferString(string(req.Data()))
-		httpReq, err := http.NewRequest("GET", "http://localhost:8081/", bodyReader)
+		httpReq, err := http.NewRequest("GET", "http://localhost:8081/", bytes.NewBuffer(req.Data()))
 		if err != nil {
 			return nil, err
 		}
-
-		httpReq.Header.Set("Content-Type", "application/json")
 
 		return httpReq, nil
 	})
 
 	ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
-
-		if conn.Context().Err() != nil {
-			return nil
-		}
-
-		if req.Context().Err() == nil {
-			slog.Error("Error handling request", "error", err)
-		}
-
 		conn.Send([]byte("Failed to process request: " + err.Error()))
 		return nil
 	})
 
-	connRegistry := channel.NewDefaultConnectionRegistry()
 	dispatcher := dispatch.NewPipeDispatcher(backend)
 	dispatcher.Use(ErrHandler)
 	dispatcher.Use(request.NewTrottlerMiddleware(10))
 
-	server := server.NewServer(Port)
-	channel := channel.NewDefaultChannel("/", dispatcher, connRegistry)
+	channel := channel.NewDefaultChannel("/", dispatcher, channel.NewDefaultConnectionRegistry())
 
+	server := server.NewServer(Port)
 	server.AddChannel(channel)
 
 	if err := server.Run(context.Background()); err != nil {
