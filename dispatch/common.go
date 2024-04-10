@@ -12,3 +12,5 @@ type RequestHandlerFunc func(conn wasabi.Connection, req wasabi.Request) error
 func (f RequestHandlerFunc) Handle(conn wasabi.Connection, req wasabi.Request) error {
 	return f(conn, req)
 }
+
+type RequestParser func(conn wasabi.Connection, data []byte) wasabi.Request
