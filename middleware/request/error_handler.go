@@ -7,6 +7,9 @@ import (
 
 type ErrorHandler func(conn wasabi.Connection, req wasabi.Request, err error) error
 
+// NewErrorHandlingMiddleware returns a new error handling middleware that wraps the provided request handler.
+// The middleware calls the provided `onError` function when an error occurs during request handling.
+// It returns a new request handler that executes the provided `next` request handler and handles any errors that occur.
 func NewErrorHandlingMiddleware(onError ErrorHandler) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {

@@ -15,6 +15,12 @@ const (
 	CloudFront
 )
 
+// NewClientIPMiddleware returns a middleware function that extracts the client's IP address from the request
+// and adds it to the request's context. The IP address is obtained using the provided IP address provider.
+// The middleware function takes the next http.Handler as input and returns a new http.Handler that wraps
+// the provided handler. When the new handler is called, it first extracts the client's IP address from the
+// request using the provider, adds it to the request's context, and then calls the next handler in the chain.
+// The IP address can be accessed from the request's context using the ClientIP key.
 func NewClientIPMiddleware(provider Provider) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
