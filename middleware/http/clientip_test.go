@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"testing"
 )
@@ -66,5 +67,34 @@ func TestGetIPFromRequest(t *testing.T) {
 	ip = getIPFromRequest(NotProvided, r)
 	if ip != "" {
 		t.Errorf("Expected IP to be empty, but got %s", ip)
+	}
+}
+
+func TestNewClientIPMiddleware(t *testing.T) {
+	// Test with Cloudflare provider
+	r, _ := http.NewRequest("GET", "http://example.com", http.NoBody)
+	r.Header.Set("CF-Connecting-IP", "192.168.0.2")
+
+	var ctx context.Context
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx = r.Context()
+	})
+
+	middleware := NewClientIPMiddleware(Cloudflare)(handler)
+	middleware.ServeHTTP(nil, r)
+
+	if ctx == nil {
+		t.Errorf("Expected context to be set, but got nil")
+	}
+
+	ip, ok := ctx.Value(ClientIP).(string)
+
+	if !ok {
+		t.Errorf("Expected IP to be a string, but got %T", ip)
+	}
+
+	if ip != "192.168.0.2" {
+		t.Errorf("Expected IP to be 192.168.0.2, but got %s", ip)
 	}
 }
