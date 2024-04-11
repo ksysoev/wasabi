@@ -107,7 +107,9 @@ func (c *Conn) Send(msg any) error {
 	return websocket.Message.Send(c.ws, msg)
 }
 
-// close closes connection
+// close closes the connection.
+// It cancels the context, sends the connection ID to the onClose channel,
+// marks the connection as closed, and waits for any pending requests to complete.
 func (c *Conn) close() {
 	if c.isClosed.Load() {
 		return
