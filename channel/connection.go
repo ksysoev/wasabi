@@ -99,7 +99,7 @@ func (c *Conn) HandleRequests() {
 }
 
 // Send sends message to connection
-func (c *Conn) Send(msg []byte) error {
+func (c *Conn) Send(msg any) error {
 	if c.isClosed.Load() || c.ctx.Err() != nil {
 		return ErrConnectionClosed
 	}

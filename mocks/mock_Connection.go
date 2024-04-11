@@ -148,7 +148,7 @@ func (_c *MockConnection_ID_Call) RunAndReturn(run func() string) *MockConnectio
 }
 
 // Send provides a mock function with given fields: msg
-func (_m *MockConnection) Send(msg []byte) error {
+func (_m *MockConnection) Send(msg interface{}) error {
 	ret := _m.Called(msg)
 
 	if len(ret) == 0 {
@@ -156,7 +156,7 @@ func (_m *MockConnection) Send(msg []byte) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]byte) error); ok {
+	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
 		r0 = rf(msg)
 	} else {
 		r0 = ret.Error(0)
@@ -171,14 +171,14 @@ type MockConnection_Send_Call struct {
 }
 
 // Send is a helper method to define mock.On call
-//   - msg []byte
+//   - msg interface{}
 func (_e *MockConnection_Expecter) Send(msg interface{}) *MockConnection_Send_Call {
 	return &MockConnection_Send_Call{Call: _e.mock.On("Send", msg)}
 }
 
-func (_c *MockConnection_Send_Call) Run(run func(msg []byte)) *MockConnection_Send_Call {
+func (_c *MockConnection_Send_Call) Run(run func(msg interface{})) *MockConnection_Send_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].([]byte))
+		run(args[0].(interface{}))
 	})
 	return _c
 }
@@ -188,7 +188,7 @@ func (_c *MockConnection_Send_Call) Return(_a0 error) *MockConnection_Send_Call 
 	return _c
 }
 
-func (_c *MockConnection_Send_Call) RunAndReturn(run func([]byte) error) *MockConnection_Send_Call {
+func (_c *MockConnection_Send_Call) RunAndReturn(run func(interface{}) error) *MockConnection_Send_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -38,7 +38,7 @@ type ConnectionRegistry interface {
 
 // Connection is interface for connections
 type Connection interface {
-	Send(msg []byte) error
+	Send(msg any) error
 	Context() context.Context
 	ID() string
 	HandleRequests()

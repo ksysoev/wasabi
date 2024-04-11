@@ -39,5 +39,5 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 		return err
 	}
 
-	return conn.Send(respBody.Bytes())
+	return conn.Send(respBody.String())
 }
