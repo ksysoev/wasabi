@@ -12,7 +12,7 @@ import (
 type DefaultChannel struct {
 	path         string
 	disptacher   wasabi.Dispatcher
-	connRegistry wasabi.ConnectionRegistry
+	connRegistry *DefaultConnectionRegistry
 	ctx          context.Context
 	middlewares  []Middlewere
 }
@@ -26,12 +26,11 @@ type DefaultChannel struct {
 func NewDefaultChannel(
 	path string,
 	dispatcher wasabi.Dispatcher,
-	connRegistry wasabi.ConnectionRegistry,
 ) *DefaultChannel {
 	return &DefaultChannel{
 		path:         path,
 		disptacher:   dispatcher,
-		connRegistry: connRegistry,
+		connRegistry: NewDefaultConnectionRegistry(),
 		middlewares:  make([]Middlewere, 0),
 	}
 }

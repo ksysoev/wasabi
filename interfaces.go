@@ -3,8 +3,6 @@ package wasabi
 import (
 	"context"
 	"net/http"
-
-	"golang.org/x/net/websocket"
 )
 
 type Request interface {
@@ -25,16 +23,6 @@ type Dispatcher interface {
 
 // OnMessage is type for OnMessage callback
 type OnMessage func(conn Connection, data []byte)
-
-// ConnectionRegistry is interface for connection registries
-type ConnectionRegistry interface {
-	AddConnection(
-		ctx context.Context,
-		ws *websocket.Conn,
-		cb OnMessage,
-	) Connection
-	GetConnection(id string) Connection
-}
 
 // Connection is interface for connections
 type Connection interface {

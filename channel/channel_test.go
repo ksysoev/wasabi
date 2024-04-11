@@ -12,9 +12,8 @@ import (
 func TestNewDefaultChannel(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	if channel.path != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.path, path)
@@ -24,10 +23,6 @@ func TestNewDefaultChannel(t *testing.T) {
 		t.Errorf("Unexpected dispatcher: got %v, expected %v", channel.disptacher, dispatcher)
 	}
 
-	if channel.connRegistry != connRegistry {
-		t.Errorf("Unexpected connection registry: got %v, expected %v", channel.connRegistry, connRegistry)
-	}
-
 	if len(channel.middlewares) != 0 {
 		t.Errorf("Unexpected number of middlewares: got %d, expected %d", len(channel.middlewares), 0)
 	}
@@ -35,9 +30,8 @@ func TestNewDefaultChannel(t *testing.T) {
 func TestDefaultChannel_Path(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	if channel.Path() != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.Path(), path)
@@ -46,9 +40,8 @@ func TestDefaultChannel_Path(t *testing.T) {
 func TestDefaultChannel_Handler(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 	channel.SetContext(context.Background())
 
 	// Call the Handler method
@@ -61,9 +54,8 @@ func TestDefaultChannel_Handler(t *testing.T) {
 func TestDefaultChannel_SetContext(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	ctx := context.Background()
 	channel.SetContext(ctx)
@@ -75,9 +67,8 @@ func TestDefaultChannel_SetContext(t *testing.T) {
 func TestDefaultChannel_Use(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +86,8 @@ func TestDefaultChannel_Use(t *testing.T) {
 func TestDefaultChannel_wrapMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	// Create a mock handler
 	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -131,9 +121,8 @@ func TestDefaultChannel_wrapMiddleware(t *testing.T) {
 func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
-	connRegistry := mocks.NewMockConnectionRegistry(t)
 
-	channel := NewDefaultChannel(path, dispatcher, connRegistry)
+	channel := NewDefaultChannel(path, dispatcher)
 
 	// Create a mock handler
 	var ctx context.Context
