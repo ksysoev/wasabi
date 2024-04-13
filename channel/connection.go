@@ -69,14 +69,18 @@ func (c *Conn) HandleRequests() {
 		msgType, reader, err := c.ws.Reader(c.ctx)
 
 		if err != nil {
-			slog.Warn("Error reading message: " + err.Error())
-
 			return
 		}
 
 		data, err := io.ReadAll(reader)
-
 		if err != nil {
+			switch {
+			case errors.Is(err, io.EOF):
+				return
+			case errors.Is(err, context.Canceled):
+				return
+			}
+
 			slog.Warn("Error reading message: " + err.Error())
 
 			return
