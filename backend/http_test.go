@@ -19,10 +19,6 @@ func TestNewBackend(t *testing.T) {
 	}
 
 	backend := NewBackend(factory)
-	if backend == nil {
-		t.Error("Expected backend to be created, but got nil")
-	}
-
 	if backend.client.Timeout != defaultTimeout {
 		t.Errorf("Expected default timeout to be %v, but got %v", defaultTimeout, backend.client.Timeout)
 	}
