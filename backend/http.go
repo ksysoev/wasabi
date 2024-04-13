@@ -3,9 +3,12 @@ package backend
 import (
 	"bytes"
 	"net/http"
+	"time"
 
 	"github.com/ksysoev/wasabi"
 )
+
+const defaultTimeout = 30 * time.Second
 
 // HTTPBackend represents an HTTP backend for handling requests.
 type HTTPBackend struct {
@@ -13,21 +16,37 @@ type HTTPBackend struct {
 	client  *http.Client
 }
 
+type httpBackendConfig struct {
+	defaultTimeout time.Duration
+}
+
+type HTTPBackendOption func(*httpBackendConfig)
+
 // NewBackend creates a new instance of HTTPBackend with the given RequestFactory.
-func NewBackend(factory RequestFactory) *HTTPBackend {
+func NewBackend(factory RequestFactory, options ...HTTPBackendOption) *HTTPBackend {
+	httpBackendConfig := &httpBackendConfig{
+		defaultTimeout: defaultTimeout,
+	}
+
+	for _, option := range options {
+		option(httpBackendConfig)
+	}
+
 	return &HTTPBackend{
 		factory: factory,
-		client:  &http.Client{},
+		client: &http.Client{
+			Timeout: httpBackendConfig.defaultTimeout,
+		},
 	}
 }
 
-// Handle handles the incoming connection and request.
-// It sends the request to the backend server and returns the response to the connection.
 func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	httpReq, err := b.factory(r)
 	if err != nil {
 		return err
 	}
+
+	httpReq = httpReq.WithContext(r.Context())
 
 	resp, err := b.client.Do(httpReq)
 	if err != nil {
@@ -44,4 +63,10 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	}
 
 	return conn.Send(respBody.String())
+}
+
+func WithDefaultTimeout(timeout time.Duration) HTTPBackendOption {
+	return func(cfg *httpBackendConfig) {
+		cfg.defaultTimeout = timeout
+	}
 }

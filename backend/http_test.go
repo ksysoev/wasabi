@@ -2,6 +2,7 @@ package backend
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,6 +19,8 @@ func TestHTTPBackend_Handle(t *testing.T) {
 
 	mockConn := mocks.NewMockConnection(t)
 	mockReq := mocks.NewMockRequest(t)
+
+	mockReq.EXPECT().Context().Return(context.Background())
 
 	mockConn.EXPECT().Send("OK").Return(nil)
 	mockReq.EXPECT().Data().Return([]byte("test request"))
