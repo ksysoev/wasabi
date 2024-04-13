@@ -62,7 +62,7 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 		return err
 	}
 
-	return conn.Send(respBody.Bytes())
+	return conn.Send(wasabi.MsgTypeText, respBody.Bytes())
 }
 
 func WithDefaultHTTPTimeout(timeout time.Duration) HTTPBackendOption {

@@ -41,7 +41,7 @@ func TestHTTPBackend_Handle(t *testing.T) {
 
 	mockReq.EXPECT().Context().Return(context.Background())
 
-	mockConn.EXPECT().Send([]byte("OK")).Return(nil)
+	mockConn.EXPECT().Send(wasabi.MsgTypeText, []byte("OK")).Return(nil)
 	mockReq.EXPECT().Data().Return([]byte("test request"))
 
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {

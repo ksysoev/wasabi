@@ -13,7 +13,7 @@ import (
 func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
 	ctx := context.Background()
 	ws := &websocket.Conn{}
-	cb := func(wasabi.Connection, []byte) {}
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
 	registry := NewDefaultConnectionRegistry()
 

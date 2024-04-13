@@ -3,6 +3,15 @@ package wasabi
 import (
 	"context"
 	"net/http"
+
+	"nhooyr.io/websocket"
+)
+
+type MessageType = websocket.MessageType
+
+const (
+	MsgTypeText   MessageType = websocket.MessageText
+	MsgTypeBinary MessageType = websocket.MessageBinary
 )
 
 type Request interface {
@@ -18,15 +27,15 @@ type Backend interface {
 
 // Dispatcher is interface for dispatchers
 type Dispatcher interface {
-	Dispatch(conn Connection, data []byte)
+	Dispatch(conn Connection, msgType MessageType, data []byte)
 }
 
 // OnMessage is type for OnMessage callback
-type OnMessage func(conn Connection, data []byte)
+type OnMessage func(conn Connection, msgType MessageType, data []byte)
 
 // Connection is interface for connections
 type Connection interface {
-	Send(msg []byte) error
+	Send(msgType MessageType, msg []byte) error
 	Context() context.Context
 	ID() string
 	HandleRequests()

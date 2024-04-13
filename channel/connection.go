@@ -66,7 +66,7 @@ func (c *Conn) HandleRequests() {
 	defer c.close()
 
 	for c.ctx.Err() == nil {
-		_, reader, err := c.ws.Reader(c.ctx)
+		msgType, reader, err := c.ws.Reader(c.ctx)
 
 		if err != nil {
 			slog.Warn("Error reading message: " + err.Error())
@@ -86,18 +86,18 @@ func (c *Conn) HandleRequests() {
 
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
-			c.onMessageCB(c, data)
+			c.onMessageCB(c, msgType, data)
 		}(c.reqWG)
 	}
 }
 
 // Send sends message to connection
-func (c *Conn) Send(msg []byte) error {
+func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 	if c.isClosed.Load() || c.ctx.Err() != nil {
 		return ErrConnectionClosed
 	}
 
-	return c.ws.Write(c.ctx, websocket.MessageText, msg)
+	return c.ws.Write(c.ctx, msgType, msg)
 }
 
 // close closes the connection.

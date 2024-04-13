@@ -32,7 +32,7 @@ func main() {
 	})
 
 	ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
-		conn.Send([]byte("Failed to process request: " + err.Error()))
+		conn.Send(wasabi.MsgTypeText, []byte("Failed to process request: "+err.Error()))
 		return nil
 	})
 

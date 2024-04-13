@@ -89,7 +89,7 @@ func TestConn_HandleRequests(t *testing.T) {
 	// Mock OnMessage callback
 	received := make(chan struct{})
 
-	conn.onMessageCB = func(c wasabi.Connection, data []byte) { received <- struct{}{} }
+	conn.onMessageCB = func(c wasabi.Connection, msgType wasabi.MessageType, data []byte) { received <- struct{}{} }
 
 	go conn.HandleRequests()
 
@@ -126,7 +126,7 @@ func TestConn_Send(t *testing.T) {
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose)
 
-	err = conn.Send([]byte("test message"))
+	err = conn.Send(wasabi.MsgTypeText, []byte("test message"))
 	if err != nil {
 		t.Errorf("Unexpected error sending message: %v", err)
 	}
