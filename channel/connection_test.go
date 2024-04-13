@@ -3,14 +3,47 @@ package channel
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/ksysoev/wasabi"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
+
+var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c, err := websocket.Accept(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer c.Close(websocket.StatusNormalClosure, "")
+
+	for {
+		_, wsr, err := c.Reader(r.Context())
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			return
+		}
+
+		wsw, err := c.Writer(r.Context(), websocket.MessageText)
+		if err != nil {
+			return
+		}
+
+		_, err = io.Copy(wsw, wsr)
+		if err != nil {
+			return
+		}
+
+		err = wsw.Close()
+		if err != nil {
+			return
+		}
+	}
+})
 
 func TestConn_ID(t *testing.T) {
 	ws := &websocket.Conn{}
@@ -33,71 +66,87 @@ func TestConn_Context(t *testing.T) {
 }
 
 func TestConn_HandleRequests(t *testing.T) {
-	server := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) { _, _ = io.Copy(ws, ws) }))
+	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 
 	url := "ws://" + server.Listener.Addr().String()
 
-	ws, err := websocket.Dial(url, "", "http://localhost/")
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %v", err)
 	}
 
-	defer ws.Close()
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose)
 
 	// Mock OnMessage callback
-	var wg sync.WaitGroup
+	received := make(chan struct{})
 
-	wg.Add(1)
-
-	conn.onMessageCB = func(c wasabi.Connection, data []byte) { wg.Done() }
+	conn.onMessageCB = func(c wasabi.Connection, msgType wasabi.MessageType, data []byte) { received <- struct{}{} }
 
 	go conn.HandleRequests()
 
 	// Send message to trigger OnMessage callback
-	err = websocket.Message.Send(ws, []byte("test message"))
+	err = ws.Write(context.Background(), websocket.MessageText, []byte("test message"))
 	if err != nil {
 		t.Errorf("Unexpected error sending message: %v", err)
 	}
 
-	wg.Wait()
+	select {
+	case <-received:
+		// Expected
+	case <-time.After(50 * time.Millisecond):
+		t.Error("Expected OnMessage callback to be called")
+	}
 }
 
 func TestConn_Send(t *testing.T) {
-	server := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) { _, _ = io.Copy(ws, ws) }))
+	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	ws, err := websocket.Dial(url, "", "http://localhost/")
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %v", err)
 	}
 
-	defer ws.Close()
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose)
 
-	err = conn.Send([]byte("test message"))
+	err = conn.Send(wasabi.MsgTypeText, []byte("test message"))
 	if err != nil {
 		t.Errorf("Unexpected error sending message: %v", err)
 	}
 }
 
 func TestConn_close(t *testing.T) {
-	server := httptest.NewServer(websocket.Handler(func(ws *websocket.Conn) { _, _ = io.Copy(ws, ws) }))
+	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	ws, err := websocket.Dial(url, "", "http://localhost/")
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %v", err)
 	}
 
-	defer ws.Close()
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose)

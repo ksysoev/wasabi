@@ -19,8 +19,8 @@ func NewPipeDispatcher(backend wasabi.Backend) *PipeDispatcher {
 }
 
 // Dispatch dispatches request to backend
-func (d *PipeDispatcher) Dispatch(conn wasabi.Connection, data []byte) {
-	req := NewRawRequest(conn.Context(), data)
+func (d *PipeDispatcher) Dispatch(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) {
+	req := NewRawRequest(conn.Context(), msgType, data)
 
 	err := d.useMiddleware(d.backend).Handle(conn, req)
 	if err != nil {

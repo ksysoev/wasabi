@@ -13,4 +13,4 @@ func (f RequestHandlerFunc) Handle(conn wasabi.Connection, req wasabi.Request) e
 	return f(conn, req)
 }
 
-type RequestParser func(conn wasabi.Connection, data []byte) wasabi.Request
+type RequestParser func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request

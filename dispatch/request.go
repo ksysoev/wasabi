@@ -7,16 +7,17 @@ import (
 )
 
 type RawRequest struct {
-	ctx  context.Context
-	data []byte
+	ctx     context.Context
+	data    []byte
+	msgType wasabi.MessageType
 }
 
-func NewRawRequest(ctx context.Context, data []byte) *RawRequest {
+func NewRawRequest(ctx context.Context, msgType wasabi.MessageType, data []byte) *RawRequest {
 	if ctx == nil {
 		panic("nil context")
 	}
 
-	return &RawRequest{ctx: ctx, data: data}
+	return &RawRequest{ctx: ctx, data: data, msgType: msgType}
 }
 
 func (r *RawRequest) Data() []byte {
@@ -24,7 +25,14 @@ func (r *RawRequest) Data() []byte {
 }
 
 func (r *RawRequest) RoutingKey() string {
-	return ""
+	switch r.msgType {
+	case wasabi.MsgTypeText:
+		return "text"
+	case wasabi.MsgTypeBinary:
+		return "binary"
+	default:
+		panic("unknown message type " + r.msgType.String())
+	}
 }
 
 func (r *RawRequest) Context() context.Context {

@@ -7,13 +7,13 @@ import (
 
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
 
 func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
 	ctx := context.Background()
 	ws := &websocket.Conn{}
-	cb := func(wasabi.Connection, []byte) {}
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
 	registry := NewDefaultConnectionRegistry()
 

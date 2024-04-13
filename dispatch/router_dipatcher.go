@@ -43,8 +43,8 @@ func (d *RouterDispatcher) AddBackend(backend wasabi.Backend, routingKeys []stri
 // Dispatch handles the incoming connection and data by parsing the request,
 // determining the appropriate backend, and handling the request using middleware.
 // If an error occurs during handling, it is logged.
-func (d *RouterDispatcher) Dispatch(conn wasabi.Connection, data []byte) {
-	req := d.parser(conn, data)
+func (d *RouterDispatcher) Dispatch(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) {
+	req := d.parser(conn, msgType, data)
 
 	if req == nil {
 		return

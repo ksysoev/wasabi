@@ -5,12 +5,11 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"net"
 	"sync"
 	"sync/atomic"
 
 	"github.com/google/uuid"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 
 	"github.com/ksysoev/wasabi"
 )
@@ -67,44 +66,42 @@ func (c *Conn) HandleRequests() {
 	defer c.close()
 
 	for c.ctx.Err() == nil {
-		var data []byte
-		err := websocket.Message.Receive(c.ws, &data)
+		msgType, reader, err := c.ws.Reader(c.ctx)
 
 		if err != nil {
+			return
+		}
+
+		data, err := io.ReadAll(reader)
+		if err != nil {
 			switch {
-			case c.isClosed.Load():
-				return
 			case errors.Is(err, io.EOF):
 				return
-			case errors.Is(err, websocket.ErrFrameTooLarge):
+			case errors.Is(err, context.Canceled):
 				return
-			case errors.Is(err, net.ErrClosed):
-				return
-			default:
-				slog.Warn("Error reading message: ", err)
 			}
 
 			slog.Warn("Error reading message: " + err.Error())
 
-			continue
+			return
 		}
 
 		c.reqWG.Add(1)
 
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
-			c.onMessageCB(c, data)
+			c.onMessageCB(c, msgType, data)
 		}(c.reqWG)
 	}
 }
 
 // Send sends message to connection
-func (c *Conn) Send(msg any) error {
+func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 	if c.isClosed.Load() || c.ctx.Err() != nil {
 		return ErrConnectionClosed
 	}
 
-	return websocket.Message.Send(c.ws, msg)
+	return c.ws.Write(c.ctx, msgType, msg)
 }
 
 // close closes the connection.
@@ -119,6 +116,6 @@ func (c *Conn) close() {
 	c.onClose <- c.id
 	c.isClosed.Store(true)
 
-	c.ws.Close()
+	_ = c.ws.CloseNow()
 	c.reqWG.Wait()
 }

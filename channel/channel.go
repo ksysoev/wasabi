@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ksysoev/wasabi"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
 
 // DefaultChannel is default implementation of Channel
@@ -51,7 +51,13 @@ func (c *DefaultChannel) Handler() http.Handler {
 		})
 	}
 
-	wsHandler := websocket.Handler(func(ws *websocket.Conn) {
+	wsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ws, err := websocket.Accept(w, r, nil)
+
+		if err != nil {
+			return
+		}
+
 		conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch)
 		conn.HandleRequests()
 	})

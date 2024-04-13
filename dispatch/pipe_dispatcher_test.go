@@ -31,9 +31,9 @@ func TestPipeDispatcher_Dispatch(t *testing.T) {
 	testError := fmt.Errorf("test error")
 
 	conn.On("Context").Return(context.Background())
-	backend.EXPECT().Handle(conn, NewRawRequest(conn.Context(), data)).Return(testError)
+	backend.EXPECT().Handle(conn, NewRawRequest(conn.Context(), wasabi.MsgTypeText, data)).Return(testError)
 
-	dispatcher.Dispatch(conn, data)
+	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
 }
 
 func TestPipeDispatcher_Use(t *testing.T) {

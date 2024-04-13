@@ -11,7 +11,9 @@ import (
 func TestNewRouterDispatcher(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return mocks.NewMockRequest(t) }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request {
+		return mocks.NewMockRequest(t)
+	}
 
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
@@ -25,7 +27,9 @@ func TestNewRouterDispatcher(t *testing.T) {
 }
 func TestRouterDispatcher_AddBackend(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return mocks.NewMockRequest(t) }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request {
+		return mocks.NewMockRequest(t)
+	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	backend := mocks.NewMockBackend(t)
@@ -58,7 +62,7 @@ func TestRouterDispatcher_DispatchDefault(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return req }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request { return req }
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
@@ -70,13 +74,13 @@ func TestRouterDispatcher_DispatchDefault(t *testing.T) {
 
 	defaultBackend.EXPECT().Handle(conn, req).Return(nil)
 
-	dispatcher.Dispatch(conn, data)
+	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
 }
 
 func TestRouterDispatcher_DispatchByRoutingKey(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return req }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request { return req }
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
@@ -90,24 +94,24 @@ func TestRouterDispatcher_DispatchByRoutingKey(t *testing.T) {
 	mockBackend.EXPECT().Handle(conn, req).Return(nil)
 	dispatcher.backendMap[routingKey] = mockBackend
 
-	dispatcher.Dispatch(conn, data)
+	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
 }
 
 func TestRouterDispatcher_DispatchWrongRequest(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return nil }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request { return nil }
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
 	data := []byte("test data")
 
-	dispatcher.Dispatch(conn, data)
+	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
 }
 
 func TestRouterDispatcher_DispatchErrorHandlingRequest(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return req }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request { return req }
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
@@ -120,11 +124,13 @@ func TestRouterDispatcher_DispatchErrorHandlingRequest(t *testing.T) {
 	mockBackend.EXPECT().Handle(conn, req).Return(fmt.Errorf("test error"))
 	dispatcher.backendMap[routingKey] = mockBackend
 
-	dispatcher.Dispatch(conn, data)
+	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
 }
 func TestRouterDispatcher_Use(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return mocks.NewMockRequest(t) }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request {
+		return mocks.NewMockRequest(t)
+	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	middleware := RequestMiddlewere(func(next wasabi.RequestHandler) wasabi.RequestHandler { return next })
@@ -143,7 +149,9 @@ func TestRouterDispatcher_UseMiddleware(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	defaultBackend.EXPECT().Handle(mockConn, mockReq).Return(testError)
 
-	parser := func(_ wasabi.Connection, _ []byte) wasabi.Request { return mocks.NewMockRequest(t) }
+	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) wasabi.Request {
+		return mocks.NewMockRequest(t)
+	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	middleware1 := RequestMiddlewere(func(next wasabi.RequestHandler) wasabi.RequestHandler { return next })
