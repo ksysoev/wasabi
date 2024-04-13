@@ -26,7 +26,7 @@ type OnMessage func(conn Connection, data []byte)
 
 // Connection is interface for connections
 type Connection interface {
-	Send(msg any) error
+	Send(msg []byte) error
 	Context() context.Context
 	ID() string
 	HandleRequests()

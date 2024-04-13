@@ -7,7 +7,7 @@ import (
 
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
 
 func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {

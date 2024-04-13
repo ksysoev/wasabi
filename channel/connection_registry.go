@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/ksysoev/wasabi"
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
 
 // DefaultConnectionRegistry is default implementation of ConnectionRegistry
