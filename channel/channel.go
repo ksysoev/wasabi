@@ -42,17 +42,17 @@ func (c *DefaultChannel) Path() string {
 
 // Handler returns http.Handler for channel
 func (c *DefaultChannel) Handler() http.Handler {
-	var ctx context.Context
+	return c.setContext(c.wrapMiddleware(c.wsConnectionHandler()))
+}
 
-	saveCtx := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx = r.Context()
-			next.ServeHTTP(w, r)
+// wsConnectionHandler handles the WebSocket connection and sets up the necessary components for communication.
+func (c *DefaultChannel) wsConnectionHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
+			OriginPatterns: []string{"*"},
 		})
-	}
-
-	wsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ws, err := websocket.Accept(w, r, nil)
 
 		if err != nil {
 			return
@@ -61,8 +61,6 @@ func (c *DefaultChannel) Handler() http.Handler {
 		conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch)
 		conn.HandleRequests()
 	})
-
-	return c.setContext(c.wrapMiddleware(saveCtx(wsHandler)))
 }
 
 // SetContext sets context for channel
