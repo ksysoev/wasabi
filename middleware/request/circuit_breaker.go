@@ -20,17 +20,16 @@ const (
 	Open
 )
 
-// NewCircuitBreakerMiddleware creates a new circuit breaker middleware with the specified threshold and period.
-// The circuit breaker middleware wraps a given `wasabi.RequestHandler` and provides circuit breaking functionality.
-// The circuit breaker tracks the number of consecutive errors and opens the circuit when the error count exceeds the threshold.
-// During the open state, all requests are rejected with an `ErrCircuitBreakerOpen` error.
-// After a specified period of time, the circuit breaker transitions to the semi-open state, allowing a single request to be processed.
-// If the request succeeds, the circuit breaker resets the error count and transitions back to the closed state.
-// If the request fails, the circuit breaker remains in the open state.
-// The circuit breaker uses synchronization primitives to ensure thread safety.
-// The `treshold` parameter specifies the maximum number of consecutive errors allowed before opening the circuit.
-// The `period` parameter specifies the duration of time after which the circuit breaker transitions to the semi-open state.
-// The returned function is a middleware that can be used with the `wasabi` framework.
+// NewCircuitBreakerMiddleware creates a new circuit breaker middleware with the specified parameters.
+// It returns a function that wraps the provided `wasabi.RequestHandler` and implements the circuit breaker logic.
+// The circuit breaker monitors the number of errors and successful requests within a given time period.
+// If the number of errors exceeds the threshold, the circuit breaker switches to the "Open" state and rejects subsequent requests.
+// After a specified number of successful requests, the circuit breaker switches back to the "Closed" state.
+// The circuit breaker uses a lock to ensure thread safety.
+// The `treshold` parameter specifies the maximum number of errors allowed within the time period.
+// The `period` parameter specifies the duration of the time period.
+// The `recoverAfter` parameter specifies the number of successful requests required to recover from the "Open" state.
+// The returned function can be used as middleware in a Wasabi server.
 func NewCircuitBreakerMiddleware(treshold uint, period time.Duration, recoverAfter uint) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	var errorCounter, successCounter uint
 
