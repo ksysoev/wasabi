@@ -65,7 +65,7 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	return conn.Send(respBody.String())
 }
 
-func WithDefaultTimeout(timeout time.Duration) HTTPBackendOption {
+func WithDefaultHTTPTimeout(timeout time.Duration) HTTPBackendOption {
 	return func(cfg *httpBackendConfig) {
 		cfg.defaultTimeout = timeout
 	}
