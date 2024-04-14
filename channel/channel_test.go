@@ -151,3 +151,32 @@ func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
 		t.Errorf("Unexpected context: got %v, expected %v", ctx, channel.ctx)
 	}
 }
+
+func TestDefaultChannel_WithOriginPatterns(t *testing.T) {
+	path := "/test/path"
+	dispatcher := mocks.NewMockDispatcher(t)
+
+	channel := NewDefaultChannel(path, dispatcher)
+
+	if len(channel.config.originPatterns) != 1 {
+		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)
+	}
+
+	if channel.config.originPatterns[0] != "*" {
+		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[0], "*")
+	}
+
+	channel = NewDefaultChannel(path, dispatcher, WithOriginPatterns("test", "test2"))
+
+	if len(channel.config.originPatterns) != 2 {
+		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)
+	}
+
+	if channel.config.originPatterns[0] != "test" {
+		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[0], "test")
+	}
+
+	if channel.config.originPatterns[1] != "test2" {
+		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[1], "test2")
+	}
+}

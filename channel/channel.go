@@ -15,7 +15,14 @@ type DefaultChannel struct {
 	connRegistry *DefaultConnectionRegistry
 	ctx          context.Context
 	middlewares  []Middlewere
+	config       channelConfig
 }
+
+type channelConfig struct {
+	originPatterns []string
+}
+
+type Option func(*channelConfig)
 
 // NewDefaultChannel creates new instance of DefaultChannel
 // path - channel path
@@ -26,12 +33,22 @@ type DefaultChannel struct {
 func NewDefaultChannel(
 	path string,
 	dispatcher wasabi.Dispatcher,
+	opts ...Option,
 ) *DefaultChannel {
+	config := channelConfig{
+		originPatterns: []string{"*"},
+	}
+
+	for _, opt := range opts {
+		opt(&config)
+	}
+
 	return &DefaultChannel{
 		path:         path,
 		disptacher:   dispatcher,
 		connRegistry: NewDefaultConnectionRegistry(),
 		middlewares:  make([]Middlewere, 0),
+		config:       config,
 	}
 }
 
@@ -51,7 +68,7 @@ func (c *DefaultChannel) wsConnectionHandler() http.Handler {
 		ctx := r.Context()
 
 		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-			OriginPatterns: []string{"*"},
+			OriginPatterns: c.config.originPatterns,
 		})
 
 		if err != nil {
@@ -87,4 +104,13 @@ func (c *DefaultChannel) setContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r.WithContext(c.ctx))
 	})
+}
+
+// WithOriginPatterns sets the origin patterns for the channel.
+// The origin patterns are used to validate the Origin header of the WebSocket handshake request.
+// If the Origin header does not match any of the patterns, the connection is rejected.
+func WithOriginPatterns(patterns ...string) Option {
+	return func(c *channelConfig) {
+		c.originPatterns = patterns
+	}
 }
