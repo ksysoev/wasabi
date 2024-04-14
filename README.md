@@ -6,6 +6,8 @@
 
 Wasabi is a Go package that provides a comprehensive toolkit for creating WebSocket API gateways. It provides a simple and intuitive API to build robust and scalable WebSocket applications.
 
+**Note the package is still under active development, public interfaces are not stable and not production-ready yet**
+
 ## Installation
 
 To install Wasabi, use the go get command:
