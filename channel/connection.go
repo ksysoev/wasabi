@@ -21,12 +21,14 @@ var (
 
 // Conn is default implementation of Connection
 type Conn struct {
+	ctx         context.Context
 	ws          *websocket.Conn
 	reqWG       *sync.WaitGroup
-	ctx         context.Context
 	onMessageCB wasabi.OnMessage
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
+	bufferPool  *bufferPool
+	sem         chan struct{}
 	id          string
 	isClosed    atomic.Bool
 }
@@ -37,6 +39,8 @@ func NewConnection(
 	ws *websocket.Conn,
 	cb wasabi.OnMessage,
 	onClose chan<- string,
+	bufferPool *bufferPool,
+	concurrencyLimit uint,
 ) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -48,6 +52,8 @@ func NewConnection(
 		onMessageCB: cb,
 		onClose:     onClose,
 		reqWG:       &sync.WaitGroup{},
+		bufferPool:  bufferPool,
+		sem:         make(chan struct{}, concurrencyLimit),
 	}
 }
 
@@ -66,13 +72,16 @@ func (c *Conn) HandleRequests() {
 	defer c.close()
 
 	for c.ctx.Err() == nil {
+		c.sem <- struct{}{}
+
+		buffer := c.bufferPool.get()
 		msgType, reader, err := c.ws.Reader(c.ctx)
 
 		if err != nil {
 			return
 		}
 
-		data, err := io.ReadAll(reader)
+		_, err = buffer.ReadFrom(reader)
 		if err != nil {
 			switch {
 			case errors.Is(err, io.EOF):
@@ -90,7 +99,9 @@ func (c *Conn) HandleRequests() {
 
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
-			c.onMessageCB(c, msgType, data)
+			c.onMessageCB(c, msgType, buffer.Bytes())
+			c.bufferPool.put(buffer)
+			<-c.sem
 		}(c.reqWG)
 	}
 }

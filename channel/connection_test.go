@@ -48,7 +48,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 func TestConn_ID(t *testing.T) {
 	ws := &websocket.Conn{}
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
 
 	if conn.ID() == "" {
 		t.Error("Expected connection ID to be non-empty")
@@ -58,7 +58,7 @@ func TestConn_ID(t *testing.T) {
 func TestConn_Context(t *testing.T) {
 	ws := &websocket.Conn{}
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
 
 	if conn.Context() == nil {
 		t.Error("Expected connection context to be non-nil")
@@ -84,7 +84,7 @@ func TestConn_HandleRequests(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
 
 	// Mock OnMessage callback
 	received := make(chan struct{})
@@ -124,7 +124,7 @@ func TestConn_Send(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
 
 	err = conn.Send(wasabi.MsgTypeText, []byte("test message"))
 	if err != nil {
@@ -149,7 +149,7 @@ func TestConn_close(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
 
 	// Mock OnClose channel
 	closeChan := make(chan string)
