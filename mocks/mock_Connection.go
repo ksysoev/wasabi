@@ -25,6 +25,54 @@ func (_m *MockConnection) EXPECT() *MockConnection_Expecter {
 	return &MockConnection_Expecter{mock: &_m.Mock}
 }
 
+// Close provides a mock function with given fields: closingCtx, status, reason
+func (_m *MockConnection) Close(closingCtx context.Context, status websocket.StatusCode, reason string) error {
+	ret := _m.Called(closingCtx, status, reason)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, websocket.StatusCode, string) error); ok {
+		r0 = rf(closingCtx, status, reason)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockConnection_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
+type MockConnection_Close_Call struct {
+	*mock.Call
+}
+
+// Close is a helper method to define mock.On call
+//   - closingCtx context.Context
+//   - status websocket.StatusCode
+//   - reason string
+func (_e *MockConnection_Expecter) Close(closingCtx interface{}, status interface{}, reason interface{}) *MockConnection_Close_Call {
+	return &MockConnection_Close_Call{Call: _e.mock.On("Close", closingCtx, status, reason)}
+}
+
+func (_c *MockConnection_Close_Call) Run(run func(closingCtx context.Context, status websocket.StatusCode, reason string)) *MockConnection_Close_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(websocket.StatusCode), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *MockConnection_Close_Call) Return(_a0 error) *MockConnection_Close_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockConnection_Close_Call) RunAndReturn(run func(context.Context, websocket.StatusCode, string) error) *MockConnection_Close_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Context provides a mock function with given fields:
 func (_m *MockConnection) Context() context.Context {
 	ret := _m.Called()

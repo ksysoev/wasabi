@@ -39,6 +39,7 @@ type Connection interface {
 	Context() context.Context
 	ID() string
 	HandleRequests()
+	Close(closingCtx context.Context, status websocket.StatusCode, reason string) error
 }
 
 // RequestHandler is interface for request handlers

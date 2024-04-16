@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net"
 	"sync"
 	"sync/atomic"
 
@@ -19,6 +20,14 @@ var (
 	ErrConnectionClosed = errors.New("connection is closed")
 )
 
+type state int32
+
+const (
+	connected  state = iota // initial and normal state of the connection
+	closing                 // connection is closing, it means that we stop accepting new requests but let the existing ones to finish
+	terminated              // connection is closed
+)
+
 // Conn is default implementation of Connection
 type Conn struct {
 	ctx         context.Context
@@ -28,9 +37,9 @@ type Conn struct {
 	onClose     chan<- string
 	ctxCancel   context.CancelFunc
 	bufferPool  *bufferPool
+	state       *atomic.Int32
 	sem         chan struct{}
 	id          string
-	isClosed    atomic.Bool
 }
 
 // NewConnection creates new instance of websocket connection
@@ -43,6 +52,8 @@ func NewConnection(
 	concurrencyLimit uint,
 ) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
+	state := atomic.Int32{}
+	state.Store(int32(connected))
 
 	return &Conn{
 		ws:          ws,
@@ -52,6 +63,7 @@ func NewConnection(
 		onMessageCB: cb,
 		onClose:     onClose,
 		reqWG:       &sync.WaitGroup{},
+		state:       &state,
 		bufferPool:  bufferPool,
 		sem:         make(chan struct{}, concurrencyLimit),
 	}
@@ -82,9 +94,14 @@ func (c *Conn) HandleRequests() {
 		}
 
 		_, err = buffer.ReadFrom(reader)
+
+		if c.state.Load() == int32(closing) {
+			continue
+		}
+
 		if err != nil {
 			switch {
-			case errors.Is(err, io.EOF):
+			case errors.Is(err, io.EOF), errors.Is(err, net.ErrClosed):
 				return
 			case errors.Is(err, context.Canceled):
 				return
@@ -108,7 +125,7 @@ func (c *Conn) HandleRequests() {
 
 // Send sends message to connection
 func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
-	if c.isClosed.Load() || c.ctx.Err() != nil {
+	if c.ctx.Err() != nil {
 		return ErrConnectionClosed
 	}
 
@@ -119,14 +136,49 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 // It cancels the context, sends the connection ID to the onClose channel,
 // marks the connection as closed, and waits for any pending requests to complete.
 func (c *Conn) close() {
-	if c.isClosed.Load() {
+	if !c.state.CompareAndSwap(int32(connected), int32(terminated)) &&
+		!c.state.CompareAndSwap(int32(closing), int32(terminated)) {
 		return
 	}
 
 	c.ctxCancel()
 	c.onClose <- c.id
-	c.isClosed.Store(true)
 
+	// Terminate the connection immediately.
 	_ = c.ws.CloseNow()
+
+	// Wait for any pending requests to complete.
 	c.reqWG.Wait()
+}
+
+// Close closes the connection with the specified status and reason.
+// If the connection is already closed or in the process of closing, it returns ErrConnectionClosed.
+// If the closingCtx is canceled, the connection is closed immediately.
+// If there are no pending requests, the connection is closed immediately.
+// If the connection is already closed, it does not wait for pending requests.
+// After closing the connection, the state is set to terminated and the onClose channel is notified with the connection ID.
+func (c *Conn) Close(closingCtx context.Context, status websocket.StatusCode, reason string) error {
+	if !c.state.CompareAndSwap(int32(connected), int32(closing)) {
+		return ErrConnectionClosed
+	}
+
+	done := make(chan struct{})
+	go func() {
+		c.reqWG.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-closingCtx.Done(): // If the context is canceled, we should close the connection immediately.
+	case <-done: // If there are no pending requests, we can close the connection immediately.
+	case <-c.ctx.Done(): // If the connection is already closed, we should not wait for pending requests.
+	}
+
+	_ = c.ws.Close(status, reason)
+
+	c.ctxCancel()
+	c.state.Store(int32(terminated))
+	c.onClose <- c.id
+
+	return nil
 }
