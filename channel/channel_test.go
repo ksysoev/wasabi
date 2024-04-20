@@ -9,11 +9,11 @@ import (
 	"github.com/ksysoev/wasabi/mocks"
 )
 
-func TestNewDefaultChannel(t *testing.T) {
+func TestNewChannel(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	if channel.path != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.path, path)
@@ -27,21 +27,21 @@ func TestNewDefaultChannel(t *testing.T) {
 		t.Errorf("Unexpected number of middlewares: got %d, expected %d", len(channel.middlewares), 0)
 	}
 }
-func TestDefaultChannel_Path(t *testing.T) {
+func TestChannel_Path(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	if channel.Path() != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.Path(), path)
 	}
 }
-func TestDefaultChannel_Handler(t *testing.T) {
+func TestChannel_Handler(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 	channel.SetContext(context.Background())
 
 	// Call the Handler method
@@ -51,11 +51,11 @@ func TestDefaultChannel_Handler(t *testing.T) {
 		t.Errorf("Unexpected nil handler")
 	}
 }
-func TestDefaultChannel_SetContext(t *testing.T) {
+func TestChannel_SetContext(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	ctx := context.Background()
 	channel.SetContext(ctx)
@@ -64,11 +64,11 @@ func TestDefaultChannel_SetContext(t *testing.T) {
 		t.Errorf("Unexpected context: got %v, expected %v", channel.ctx, ctx)
 	}
 }
-func TestDefaultChannel_Use(t *testing.T) {
+func TestChannel_Use(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -83,11 +83,11 @@ func TestDefaultChannel_Use(t *testing.T) {
 	}
 }
 
-func TestDefaultChannel_wrapMiddleware(t *testing.T) {
+func TestChannel_wrapMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	// Create a mock handler
 	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,11 +118,11 @@ func TestDefaultChannel_wrapMiddleware(t *testing.T) {
 		t.Errorf("Unexpected nil wrappedHandler")
 	}
 }
-func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
+func TestChannel_SetContextMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	// Create a mock handler
 	var ctx context.Context
@@ -152,11 +152,11 @@ func TestDefaultChannel_SetContextMiddleware(t *testing.T) {
 	}
 }
 
-func TestDefaultChannel_WithOriginPatterns(t *testing.T) {
+func TestChannel_WithOriginPatterns(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewDefaultChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher)
 
 	if len(channel.config.originPatterns) != 1 {
 		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)
@@ -166,7 +166,7 @@ func TestDefaultChannel_WithOriginPatterns(t *testing.T) {
 		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[0], "*")
 	}
 
-	channel = NewDefaultChannel(path, dispatcher, WithOriginPatterns("test", "test2"))
+	channel = NewChannel(path, dispatcher, WithOriginPatterns("test", "test2"))
 
 	if len(channel.config.originPatterns) != 2 {
 		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)

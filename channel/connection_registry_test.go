@@ -11,7 +11,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
-func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
+func TestConnectionRegistry_AddConnection(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
@@ -30,7 +30,7 @@ func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
 
 	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
-	registry := NewDefaultConnectionRegistry()
+	registry := NewConnectionRegistry()
 
 	conn := registry.AddConnection(ctx, ws, cb)
 
@@ -43,8 +43,8 @@ func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
 	}
 }
 
-func TestDefaultConnectionRegistry_GetConnection(t *testing.T) {
-	registry := NewDefaultConnectionRegistry()
+func TestConnectionRegistry_GetConnection(t *testing.T) {
+	registry := NewConnectionRegistry()
 
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("testID")
@@ -62,8 +62,8 @@ func TestDefaultConnectionRegistry_GetConnection(t *testing.T) {
 	}
 }
 
-func TestDefaultConnectionRegistry_handleClose(t *testing.T) {
-	registry := NewDefaultConnectionRegistry()
+func TestConnectionRegistry_handleClose(t *testing.T) {
+	registry := NewConnectionRegistry()
 
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("testID")
@@ -88,8 +88,8 @@ func TestDefaultConnectionRegistry_handleClose(t *testing.T) {
 	}
 }
 
-func TestDefaultConnectionRegistry_WithMaxFrameLimit(t *testing.T) {
-	registry := NewDefaultConnectionRegistry(WithMaxFrameLimit(100))
+func TestConnectionRegistry_WithMaxFrameLimit(t *testing.T) {
+	registry := NewConnectionRegistry(WithMaxFrameLimit(100))
 
 	if registry.frameSizeLimit != 100 {
 		t.Errorf("Unexpected frame size limit: got %d, expected %d", registry.frameSizeLimit, 100)

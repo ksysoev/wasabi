@@ -23,7 +23,7 @@ func TestNewBackend(t *testing.T) {
 		t.Errorf("Expected default timeout to be %v, but got %v", defaultTimeout, backend.client.Timeout)
 	}
 
-	backend = NewBackend(factory, WithDefaultHTTPTimeout(10))
+	backend = NewBackend(factory, WithTimeout(10))
 
 	if backend.client.Timeout != 10 {
 		t.Errorf("Expected default timeout to be 10, but got %v", backend.client.Timeout)

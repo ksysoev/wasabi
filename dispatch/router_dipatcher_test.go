@@ -58,7 +58,7 @@ func TestRouterDispatcher_AddBackend(t *testing.T) {
 	}
 }
 
-func TestRouterDispatcher_DispatchDefault(t *testing.T) {
+func TestRouterDispatcher_Dispatch(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 
 	req := mocks.NewMockRequest(t)
