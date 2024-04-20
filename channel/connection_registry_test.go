@@ -2,6 +2,7 @@ package channel
 
 import (
 	"context"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -11,8 +12,22 @@ import (
 )
 
 func TestDefaultConnectionRegistry_AddConnection(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
 	ctx := context.Background()
-	ws := &websocket.Conn{}
+
 	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
 	registry := NewDefaultConnectionRegistry()
@@ -70,5 +85,13 @@ func TestDefaultConnectionRegistry_handleClose(t *testing.T) {
 
 	if registry.GetConnection(conn.ID()) != nil {
 		t.Error("Expected connection to be removed from the registry")
+	}
+}
+
+func TestDefaultConnectionRegistry_WithMaxFrameLimit(t *testing.T) {
+	registry := NewDefaultConnectionRegistry(WithMaxFrameLimit(100))
+
+	if registry.frameSizeLimit != 100 {
+		t.Errorf("Unexpected frame size limit: got %d, expected %d", registry.frameSizeLimit, 100)
 	}
 }
