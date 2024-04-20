@@ -69,7 +69,7 @@ func main() {
 
     // We create a new server with wasabi.NewServer and add a channel to it with server.AddChannel. 
     // The server listens on port 8080 and the channel handles all requests to the / path.
-    channel := channel.NewDefaultChannel("/", dispatcher)
+    channel := channel.NewChannel("/", dispatcher)
     server := server.NewServer(Port)
     server.AddChannel(channel)
 

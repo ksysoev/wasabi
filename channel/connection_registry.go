@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	DefaultConcurencyLimitPerConnection = 25
-	FrameSizeLimitInBytes               = 32768
+	concurencyLimitPerConnection = 25
+	frameSizeLimitInBytes        = 32768
 )
 
-// DefaultConnectionRegistry is default implementation of ConnectionRegistry
-type DefaultConnectionRegistry struct {
+// ConnectionRegistry is default implementation of ConnectionRegistry
+type ConnectionRegistry struct {
 	connections      map[string]wasabi.Connection
 	onClose          chan string
 	bufferPool       *bufferPool
@@ -23,16 +23,16 @@ type DefaultConnectionRegistry struct {
 	frameSizeLimit   int64
 }
 
-type ConnectionRegistryOption func(*DefaultConnectionRegistry)
+type ConnectionRegistryOption func(*ConnectionRegistry)
 
-// NewDefaultConnectionRegistry creates new instance of DefaultConnectionRegistry
-func NewDefaultConnectionRegistry(opts ...ConnectionRegistryOption) *DefaultConnectionRegistry {
-	reg := &DefaultConnectionRegistry{
+// NewConnectionRegistry creates new instance of ConnectionRegistry
+func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry {
+	reg := &ConnectionRegistry{
 		connections:      make(map[string]wasabi.Connection),
 		onClose:          make(chan string),
-		concurrencyLimit: DefaultConcurencyLimitPerConnection,
+		concurrencyLimit: concurencyLimitPerConnection,
 		bufferPool:       newBufferPool(),
-		frameSizeLimit:   FrameSizeLimitInBytes,
+		frameSizeLimit:   frameSizeLimitInBytes,
 	}
 
 	for _, opt := range opts {
@@ -45,7 +45,7 @@ func NewDefaultConnectionRegistry(opts ...ConnectionRegistryOption) *DefaultConn
 }
 
 // AddConnection adds new Websocket connection to registry
-func (r *DefaultConnectionRegistry) AddConnection(
+func (r *ConnectionRegistry) AddConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
 	cb wasabi.OnMessage,
@@ -62,7 +62,7 @@ func (r *DefaultConnectionRegistry) AddConnection(
 }
 
 // GetConnection returns connection by id
-func (r *DefaultConnectionRegistry) GetConnection(id string) wasabi.Connection {
+func (r *ConnectionRegistry) GetConnection(id string) wasabi.Connection {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -70,7 +70,7 @@ func (r *DefaultConnectionRegistry) GetConnection(id string) wasabi.Connection {
 }
 
 // handleClose handles connection cloasures and removes them from registry
-func (r *DefaultConnectionRegistry) handleClose() {
+func (r *ConnectionRegistry) handleClose() {
 	for id := range r.onClose {
 		r.mu.Lock()
 		delete(r.connections, id)
@@ -80,12 +80,12 @@ func (r *DefaultConnectionRegistry) handleClose() {
 
 // WithMaxFrameLimit sets the maximum frame size limit for incomming messages to the ConnectionRegistry.
 // The limit parameter specifies the maximum frame size limit in bytes.
-// This option can be used when creating a new DefaultConnectionRegistry instance.
+// This option can be used when creating a new ConnectionRegistry instance.
 // The default frame size limit is 32768 bytes.
 // If the limit is set to -1, the frame size limit is disabled.
 // When the frame size limit is exceeded, the connection is closed with status 1009 (message too large).
 func WithMaxFrameLimit(limit int64) ConnectionRegistryOption {
-	return func(r *DefaultConnectionRegistry) {
+	return func(r *ConnectionRegistry) {
 		r.frameSizeLimit = limit
 	}
 }
