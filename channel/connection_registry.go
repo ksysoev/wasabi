@@ -1,7 +1,6 @@
 package channel
 
 import (
-	"bytes"
 	"context"
 	"sync"
 
@@ -11,6 +10,7 @@ import (
 
 const (
 	DefaultConcurencyLimitPerConnection = 25
+	FrameSizeLimitInBytes               = 32768
 )
 
 // DefaultConnectionRegistry is default implementation of ConnectionRegistry
@@ -20,15 +20,23 @@ type DefaultConnectionRegistry struct {
 	bufferPool       *bufferPool
 	concurrencyLimit uint
 	mu               sync.RWMutex
+	frameSizeLimit   int64
 }
 
+type ConnectionRegistryOption func(*DefaultConnectionRegistry)
+
 // NewDefaultConnectionRegistry creates new instance of DefaultConnectionRegistry
-func NewDefaultConnectionRegistry() *DefaultConnectionRegistry {
+func NewDefaultConnectionRegistry(opts ...ConnectionRegistryOption) *DefaultConnectionRegistry {
 	reg := &DefaultConnectionRegistry{
 		connections:      make(map[string]wasabi.Connection),
 		onClose:          make(chan string),
 		concurrencyLimit: DefaultConcurencyLimitPerConnection,
 		bufferPool:       newBufferPool(),
+		frameSizeLimit:   FrameSizeLimitInBytes,
+	}
+
+	for _, opt := range opts {
+		opt(reg)
 	}
 
 	go reg.handleClose()
@@ -47,6 +55,8 @@ func (r *DefaultConnectionRegistry) AddConnection(
 
 	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit)
 	r.connections[conn.ID()] = conn
+
+	conn.ws.SetReadLimit(r.frameSizeLimit)
 
 	return conn
 }
@@ -68,25 +78,14 @@ func (r *DefaultConnectionRegistry) handleClose() {
 	}
 }
 
-type bufferPool struct {
-	pool *sync.Pool
-}
-
-func newBufferPool() *bufferPool {
-	return &bufferPool{
-		pool: &sync.Pool{
-			New: func() interface{} {
-				return &bytes.Buffer{}
-			},
-		},
+// WithMaxFrameLimit sets the maximum frame size limit for incomming messages to the ConnectionRegistry.
+// The limit parameter specifies the maximum frame size limit in bytes.
+// This option can be used when creating a new DefaultConnectionRegistry instance.
+// The default frame size limit is 32768 bytes.
+// If the limit is set to -1, the frame size limit is disabled.
+// When the frame size limit is exceeded, the connection is closed with status 1009 (message too large).
+func WithMaxFrameLimit(limit int64) ConnectionRegistryOption {
+	return func(r *DefaultConnectionRegistry) {
+		r.frameSizeLimit = limit
 	}
-}
-
-func (p *bufferPool) get() *bytes.Buffer {
-	return p.pool.Get().(*bytes.Buffer)
-}
-
-func (p *bufferPool) put(b *bytes.Buffer) {
-	b.Reset()
-	p.pool.Put(b)
 }
