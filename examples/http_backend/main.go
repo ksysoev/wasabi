@@ -38,7 +38,7 @@ func main() {
 
 	dispatcher := dispatch.NewPipeDispatcher(backend)
 	dispatcher.Use(ErrHandler)
-	dispatcher.Use(request.NewTrottlerMiddleware(10))
+	dispatcher.Use(request.NewTrottlerMiddleware(100))
 
 	channel := channel.NewChannel("/", dispatcher, channel.WithOriginPatterns("*"))
 
