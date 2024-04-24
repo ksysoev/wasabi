@@ -67,9 +67,14 @@ func main() {
     dispatcher.Use(ErrHandler)
     dispatcher.Use(request.NewTrottlerMiddleware(10))
 
+     // We create a new connection registry with channel.NewConnectionRegistry. 
+     // This registry keeps track of all active connections 
+     // and responsible for managing connection's settings.
+     connRegistry := channel.NewConnectionRegistry()
+
     // We create a new server with wasabi.NewServer and add a channel to it with server.AddChannel. 
     // The server listens on port 8080 and the channel handles all requests to the / path.
-    channel := channel.NewChannel("/", dispatcher)
+    channel := channel.NewChannel("/", dispatcher, connRegistry)
     server := server.NewServer(Port)
     server.AddChannel(channel)
 

@@ -53,3 +53,13 @@ type Channel interface {
 	SetContext(ctx context.Context)
 	Handler() http.Handler
 }
+
+// ConnectionRegistry is interface for connection registries
+type ConnectionRegistry interface {
+	AddConnection(
+		ctx context.Context,
+		ws *websocket.Conn,
+		cb OnMessage,
+	) Connection
+	GetConnection(id string) Connection
+}

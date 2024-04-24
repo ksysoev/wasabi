@@ -12,3 +12,4 @@ packages:
       Connection:
       Request:
       Channel:
+      ConnectionRegistry:
