@@ -40,7 +40,7 @@ func main() {
 	dispatcher.Use(ErrHandler)
 	dispatcher.Use(request.NewTrottlerMiddleware(100))
 
-	channel := channel.NewChannel("/", dispatcher, channel.WithOriginPatterns("*"))
+	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
 	server := server.NewServer(Port)
 	server.AddChannel(channel)

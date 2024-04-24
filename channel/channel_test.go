@@ -13,7 +13,7 @@ func TestNewChannel(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	if channel.path != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.path, path)
@@ -31,7 +31,7 @@ func TestChannel_Path(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	if channel.Path() != path {
 		t.Errorf("Unexpected path: got %q, expected %q", channel.Path(), path)
@@ -41,7 +41,7 @@ func TestChannel_Handler(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 	channel.SetContext(context.Background())
 
 	// Call the Handler method
@@ -55,7 +55,7 @@ func TestChannel_SetContext(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	ctx := context.Background()
 	channel.SetContext(ctx)
@@ -68,7 +68,7 @@ func TestChannel_Use(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	middleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +87,7 @@ func TestChannel_wrapMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	// Create a mock handler
 	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +122,7 @@ func TestChannel_SetContextMiddleware(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	// Create a mock handler
 	var ctx context.Context
@@ -156,7 +156,7 @@ func TestChannel_WithOriginPatterns(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher)
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	if len(channel.config.originPatterns) != 1 {
 		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)
@@ -166,7 +166,7 @@ func TestChannel_WithOriginPatterns(t *testing.T) {
 		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[0], "*")
 	}
 
-	channel = NewChannel(path, dispatcher, WithOriginPatterns("test", "test2"))
+	channel = NewChannel(path, dispatcher, NewConnectionRegistry(), WithOriginPatterns("test", "test2"))
 
 	if len(channel.config.originPatterns) != 2 {
 		t.Errorf("Unexpected number of origin patterns: got %d, expected %d", len(channel.config.originPatterns), 1)

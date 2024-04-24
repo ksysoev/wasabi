@@ -3,3 +3,6 @@ test:
 
 lint:
 	golangci-lint run
+
+mocks:
+	mockery --all --keeptree

@@ -1,7 +1,7 @@
 # Wasabi: A Toolkit for Creating WebSocket API Gateway
 
 [![WaSAbi](https://github.com/ksysoev/wasabi/actions/workflows/main.yml/badge.svg)](https://github.com/ksysoev/wasabi/actions/workflows/main.yml)
-[![codecov](https://codecov.io/gh/ksysoev/wasabi/graph/badge.svg?token=3KGTO1UINI)](https://codecov.io/gh/ksysoev/wasabi)
+[![CodeCov](https://codecov.io/gh/ksysoev/wasabi/graph/badge.svg?token=3KGTO1UINI)](https://codecov.io/gh/ksysoev/wasabi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 Wasabi is a Go package that provides a comprehensive toolkit for creating WebSocket API gateways. It provides a simple and intuitive API to build robust and scalable WebSocket applications.
@@ -67,9 +67,14 @@ func main() {
     dispatcher.Use(ErrHandler)
     dispatcher.Use(request.NewTrottlerMiddleware(10))
 
+     // We create a new connection registry with channel.NewConnectionRegistry. 
+     // This registry keeps track of all active connections 
+     // and responsible for managing connection's settings.
+     connRegistry := channel.NewConnectionRegistry()
+
     // We create a new server with wasabi.NewServer and add a channel to it with server.AddChannel. 
     // The server listens on port 8080 and the channel handles all requests to the / path.
-    channel := channel.NewChannel("/", dispatcher)
+    channel := channel.NewChannel("/", dispatcher, connRegistry)
     server := server.NewServer(Port)
     server.AddChannel(channel)
 

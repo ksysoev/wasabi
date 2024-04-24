@@ -12,7 +12,7 @@ import (
 type Channel struct {
 	path         string
 	disptacher   wasabi.Dispatcher
-	connRegistry *ConnectionRegistry
+	connRegistry wasabi.ConnectionRegistry
 	ctx          context.Context
 	middlewares  []Middlewere
 	config       channelConfig
@@ -33,6 +33,7 @@ type Option func(*channelConfig)
 func NewChannel(
 	path string,
 	dispatcher wasabi.Dispatcher,
+	connRegistry wasabi.ConnectionRegistry,
 	opts ...Option,
 ) *Channel {
 	config := channelConfig{
@@ -46,7 +47,7 @@ func NewChannel(
 	return &Channel{
 		path:         path,
 		disptacher:   dispatcher,
-		connRegistry: NewConnectionRegistry(),
+		connRegistry: connRegistry,
 		middlewares:  make([]Middlewere, 0),
 		config:       config,
 	}
