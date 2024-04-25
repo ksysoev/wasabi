@@ -2,43 +2,19 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/ksysoev/wasabi/mocks"
 )
 
-func TestServer_Shutdown_with_context(t *testing.T) {
-	// Create a new Server instance
-	server := NewServer(0)
-
-	// Create a new context
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-
-	doneChan := make(chan struct{})
-	// Start the server in a separate goroutine
-	go func() {
-		_ = server.Run(ctx)
-
-		close(doneChan)
-	}()
-
-	cancel()
-
-	select {
-	case <-doneChan:
-	case <-time.After(1 * time.Second):
-		t.Error("Server did not stop")
-	}
-}
-
 func TestNewServer(t *testing.T) {
-	port := uint16(8080)
-	server := NewServer(port)
+	addr := ":8080"
+	server := NewServer(addr)
 
-	if server.port != port {
-		t.Errorf("Expected port %d, but got %d", port, server.port)
+	if server.addr != addr {
+		t.Errorf("Expected port %s, but got %s", addr, server.addr)
 	}
 
 	if len(server.channels) != 0 {
@@ -51,7 +27,7 @@ func TestNewServer(t *testing.T) {
 }
 func TestServer_AddChannel(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(0)
+	server := NewServer(":0")
 
 	// Create a new channel
 	channel := mocks.NewMockChannel(t)
@@ -67,5 +43,49 @@ func TestServer_AddChannel(t *testing.T) {
 
 	if server.channels[0].Path() != "test" {
 		t.Errorf("Expected channel name 'test', but got '%s'", server.channels[0].Path())
+	}
+}
+
+func TestServer_WithBaseContext(t *testing.T) {
+	// Create a new Server instance with a base context
+	//lint:ignore SA1029 This is a test
+	ctx := context.WithValue(context.Background(), "test", "test")
+
+	server := NewServer(":0", WithBaseContext(ctx))
+
+	// Check if the base context was set correctly
+	if server.baseCtx == nil {
+		t.Error("Expected non-nil base context")
+	}
+
+	if server.baseCtx.Value("test") != "test" {
+		t.Errorf("Expected context value 'test', but got '%s'", server.baseCtx.Value("test"))
+	}
+}
+
+func TestServer_Run(t *testing.T) {
+	// Create a new Server instance
+	server := NewServer(":0")
+
+	// Run the server
+	done := make(chan struct{})
+	go func() {
+		err := server.Run()
+		if err != http.ErrServerClosed {
+			t.Errorf("Expected error %v, but got %v", http.ErrServerClosed, err)
+		}
+		close(done)
+	}()
+
+	<-time.After(50 * time.Millisecond)
+	err := server.http.Close()
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to stop")
 	}
 }
