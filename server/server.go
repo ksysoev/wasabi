@@ -18,19 +18,19 @@ const (
 )
 
 type Server struct {
-	mutex    *sync.Mutex
-	channels []wasabi.Channel
-	addr     string
-	http     *http.Server
 	baseCtx  context.Context
+	mutex    *sync.Mutex
+	http     *http.Server
+	addr     string
+	channels []wasabi.Channel
 }
 
-type ServerOption func(*Server)
+type Option func(*Server)
 
 // NewServer creates new instance of Wasabi server
 // port - port to listen on
 // returns new instance of Server
-func NewServer(addr string, opts ...ServerOption) *Server {
+func NewServer(addr string, opts ...Option) *Server {
 	server := &Server{
 		addr:     addr,
 		channels: make([]wasabi.Channel, 0, 1),
@@ -50,9 +50,9 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 	s.channels = append(s.channels, channel)
 }
 
-// Run starts server
-// ctx - context
-// returns error if any
+// Run starts the server
+// returns error if server is already running
+// or if server fails to start
 func (s *Server) Run() error {
 	if !s.mutex.TryLock() {
 		return fmt.Errorf("server is already running")
@@ -86,7 +86,7 @@ func (s *Server) Run() error {
 
 // BaseContext optionally specifies based context that will be used for all connections.
 // If not specified, context.Background() will be used.
-func WithBaseContext(ctx context.Context) ServerOption {
+func WithBaseContext(ctx context.Context) Option {
 	if ctx == nil {
 		panic("nil context")
 	}

@@ -9,6 +9,8 @@ import (
 	"github.com/ksysoev/wasabi/mocks"
 )
 
+type testCtxKey string
+
 func TestNewServer(t *testing.T) {
 	addr := ":8080"
 	server := NewServer(addr)
@@ -48,8 +50,7 @@ func TestServer_AddChannel(t *testing.T) {
 
 func TestServer_WithBaseContext(t *testing.T) {
 	// Create a new Server instance with a base context
-	//lint:ignore SA1029 This is a test
-	ctx := context.WithValue(context.Background(), "test", "test")
+	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
 
 	server := NewServer(":0", WithBaseContext(ctx))
 
@@ -58,7 +59,7 @@ func TestServer_WithBaseContext(t *testing.T) {
 		t.Error("Expected non-nil base context")
 	}
 
-	if server.baseCtx.Value("test") != "test" {
+	if server.baseCtx.Value(testCtxKey("test")) != "test" {
 		t.Errorf("Expected context value 'test', but got '%s'", server.baseCtx.Value("test"))
 	}
 }
@@ -70,16 +71,16 @@ func TestServer_Run(t *testing.T) {
 	// Run the server
 	done := make(chan struct{})
 	go func() {
-		err := server.Run()
-		if err != http.ErrServerClosed {
+		if err := server.Run(); err != http.ErrServerClosed {
 			t.Errorf("Expected error %v, but got %v", http.ErrServerClosed, err)
 		}
+
 		close(done)
 	}()
 
-	<-time.After(50 * time.Millisecond)
-	err := server.http.Close()
-	if err != nil {
+	<-time.After(100 * time.Millisecond)
+
+	if err := server.http.Close(); err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}
 
