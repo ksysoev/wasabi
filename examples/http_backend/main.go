@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Port = 8080
+	Addr = ":8080"
 )
 
 func main() {
@@ -42,10 +42,10 @@ func main() {
 
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
-	server := server.NewServer(Port)
+	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
 	server.AddChannel(channel)
 
-	if err := server.Run(context.Background()); err != nil {
+	if err := server.Run(); err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)
 	}

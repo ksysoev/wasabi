@@ -1,9 +1,7 @@
 package channel
 
 import (
-	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/ksysoev/wasabi/mocks"
@@ -42,7 +40,6 @@ func TestChannel_Handler(t *testing.T) {
 	dispatcher := mocks.NewMockDispatcher(t)
 
 	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
-	channel.SetContext(context.Background())
 
 	// Call the Handler method
 	handler := channel.Handler()
@@ -51,19 +48,7 @@ func TestChannel_Handler(t *testing.T) {
 		t.Errorf("Unexpected nil handler")
 	}
 }
-func TestChannel_SetContext(t *testing.T) {
-	path := "/test/path"
-	dispatcher := mocks.NewMockDispatcher(t)
 
-	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
-
-	ctx := context.Background()
-	channel.SetContext(ctx)
-
-	if channel.ctx != ctx {
-		t.Errorf("Unexpected context: got %v, expected %v", channel.ctx, ctx)
-	}
-}
 func TestChannel_Use(t *testing.T) {
 	path := "/test/path"
 	dispatcher := mocks.NewMockDispatcher(t)
@@ -116,39 +101,6 @@ func TestChannel_wrapMiddleware(t *testing.T) {
 	// Assert that the wrappedHandler is the result of applying the middlewares to the mockHandler
 	if wrappedHandler == nil {
 		t.Errorf("Unexpected nil wrappedHandler")
-	}
-}
-func TestChannel_SetContextMiddleware(t *testing.T) {
-	path := "/test/path"
-	dispatcher := mocks.NewMockDispatcher(t)
-
-	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
-
-	// Create a mock handler
-	var ctx context.Context
-
-	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx = r.Context()
-	})
-
-	// Create a mock request
-	mockRequest := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-
-	// Create a mock response recorder
-	mockResponseRecorder := httptest.NewRecorder()
-
-	// Set the context for the channel
-	channel.SetContext(context.WithValue(context.Background(), struct{ key string }{"test"}, "test"))
-
-	// Wrap the mock handler with the setContext middleware
-	wrappedHandler := channel.setContext(mockHandler)
-
-	// Call the wrappedHandler with the mock request and response recorder
-	wrappedHandler.ServeHTTP(mockResponseRecorder, mockRequest)
-
-	// Assert that the context of the request is set to the channel's context
-	if ctx != channel.ctx {
-		t.Errorf("Unexpected context: got %v, expected %v", ctx, channel.ctx)
 	}
 }
 
