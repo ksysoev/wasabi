@@ -17,10 +17,12 @@ const (
 	ReadTimeout       = 30 * time.Second
 )
 
+var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
+
 type Server struct {
 	baseCtx  context.Context
 	mutex    *sync.Mutex
-	http     *http.Server
+	handler  *http.Server
 	addr     string
 	channels []wasabi.Channel
 }
@@ -42,6 +44,15 @@ func NewServer(addr string, opts ...Option) *Server {
 		opt(server)
 	}
 
+	server.handler = &http.Server{
+		Addr:              addr,
+		ReadHeaderTimeout: ReadHeaderTimeout,
+		ReadTimeout:       ReadTimeout,
+		BaseContext: func(_ net.Listener) context.Context {
+			return server.baseCtx
+		},
+	}
+
 	return server
 }
 
@@ -55,7 +66,7 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 // or if server fails to start
 func (s *Server) Run() error {
 	if !s.mutex.TryLock() {
-		return fmt.Errorf("server is already running")
+		return ErrServerAlreadyRunning
 	}
 
 	defer s.mutex.Unlock()
@@ -69,19 +80,11 @@ func (s *Server) Run() error {
 		)
 	}
 
+	s.handler.Handler = mux
+
 	slog.Info("Starting app server on " + s.addr)
 
-	s.http = &http.Server{
-		Addr:              s.addr,
-		ReadHeaderTimeout: ReadHeaderTimeout,
-		ReadTimeout:       ReadTimeout,
-		Handler:           mux,
-		BaseContext: func(_ net.Listener) context.Context {
-			return s.baseCtx
-		},
-	}
-
-	return s.http.ListenAndServe()
+	return s.handler.ListenAndServe()
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.

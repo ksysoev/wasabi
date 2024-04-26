@@ -68,6 +68,12 @@ func TestServer_Run(t *testing.T) {
 	// Create a new Server instance
 	server := NewServer(":0")
 
+	channel := mocks.NewMockChannel(t)
+	channel.EXPECT().Path().Return("/test")
+	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+	server.AddChannel(channel)
+
 	// Run the server
 	done := make(chan struct{})
 	go func() {
@@ -78,9 +84,13 @@ func TestServer_Run(t *testing.T) {
 		close(done)
 	}()
 
-	<-time.After(100 * time.Millisecond)
+	<-time.After(50 * time.Millisecond)
 
-	if err := server.http.Close(); err != nil {
+	if err := server.Run(); err != ErrServerAlreadyRunning {
+		t.Errorf("Expected error %v, but got %v", ErrServerAlreadyRunning, err)
+	}
+
+	if err := server.handler.Close(); err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}
 
