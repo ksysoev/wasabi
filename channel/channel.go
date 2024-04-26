@@ -1,7 +1,6 @@
 package channel
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/ksysoev/wasabi"
@@ -13,7 +12,6 @@ type Channel struct {
 	path         string
 	disptacher   wasabi.Dispatcher
 	connRegistry wasabi.ConnectionRegistry
-	ctx          context.Context
 	middlewares  []Middlewere
 	config       channelConfig
 }
@@ -60,7 +58,7 @@ func (c *Channel) Path() string {
 
 // Handler returns http.Handler for channel
 func (c *Channel) Handler() http.Handler {
-	return c.setContext(c.wrapMiddleware(c.wsConnectionHandler()))
+	return c.wrapMiddleware(c.wsConnectionHandler())
 }
 
 // wsConnectionHandler handles the WebSocket connection and sets up the necessary components for communication.
@@ -81,11 +79,6 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 	})
 }
 
-// SetContext sets context for channel
-func (c *Channel) SetContext(ctx context.Context) {
-	c.ctx = ctx
-}
-
 // Use adds middlewere to channel
 func (c *Channel) Use(middlewere Middlewere) {
 	c.middlewares = append(c.middlewares, middlewere)
@@ -98,13 +91,6 @@ func (c *Channel) wrapMiddleware(handler http.Handler) http.Handler {
 	}
 
 	return handler
-}
-
-// setContext sets context for handler
-func (c *Channel) setContext(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(c.ctx))
-	})
 }
 
 // WithOriginPatterns sets the origin patterns for the channel.

@@ -50,7 +50,6 @@ type RequestHandler interface {
 // Channel is interface for channels
 type Channel interface {
 	Path() string
-	SetContext(ctx context.Context)
 	Handler() http.Handler
 }
 
