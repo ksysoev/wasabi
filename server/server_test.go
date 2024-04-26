@@ -74,20 +74,30 @@ func TestServer_Run(t *testing.T) {
 
 	server.AddChannel(channel)
 
-	// Run the server
 	done := make(chan struct{})
-	go func() {
-		if err := server.Run(); err != http.ErrServerClosed {
-			t.Errorf("Expected error %v, but got %v", http.ErrServerClosed, err)
+
+	// Run the server
+	for i := 0; i < 2; i++ {
+		go func() {
+			err := server.Run()
+			switch err {
+			case http.ErrServerClosed:
+				close(done)
+			case ErrServerAlreadyRunning:
+				done <- struct{}{}
+			default:
+				t.Errorf("Got unexpected error: %v", err)
+			}
+		}()
+	}
+
+	select {
+	case _, ok := <-done:
+		if !ok {
+			t.Error("Expected server to start")
 		}
-
-		close(done)
-	}()
-
-	<-time.After(50 * time.Millisecond)
-
-	if err := server.Run(); err != ErrServerAlreadyRunning {
-		t.Errorf("Expected error %v, but got %v", ErrServerAlreadyRunning, err)
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
 	}
 
 	if err := server.handler.Close(); err != nil {
