@@ -84,7 +84,36 @@ func (s *Server) Run() error {
 
 	slog.Info("Starting app server on " + s.addr)
 
-	return s.handler.ListenAndServe()
+	err := s.handler.ListenAndServe()
+
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	done := make(chan error)
+
+	go func() {
+		defer close(done)
+		err := s.handler.Shutdown(ctx)
+		if err != nil {
+			done <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err, ok := <-done:
+		if !ok {
+			return nil
+		}
+
+		return err
+	}
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.
