@@ -21,10 +21,6 @@ type Request interface {
 	WithContext(ctx context.Context) Request
 }
 
-type Backend interface {
-	Handle(conn Connection, r Request) error
-}
-
 // Dispatcher is interface for dispatchers
 type Dispatcher interface {
 	Dispatch(conn Connection, msgType MessageType, data []byte)

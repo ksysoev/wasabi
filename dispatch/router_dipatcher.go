@@ -8,8 +8,8 @@ import (
 )
 
 type RouterDispatcher struct {
-	defaultBackend wasabi.Backend
-	backendMap     map[string]wasabi.Backend
+	defaultBackend wasabi.RequestHandler
+	backendMap     map[string]wasabi.RequestHandler
 	parser         RequestParser
 	middlewares    []RequestMiddlewere
 }
@@ -18,17 +18,17 @@ type RouterDispatcher struct {
 // It takes a defaultBackend and a request parser as parameters and returns a pointer to RouterDispatcher.
 // The defaultBackend parameter is the default backend to be used when no specific backend is found.
 // The parser parameter is used to parse incoming requests.
-func NewRouterDispatcher(defaultBackend wasabi.Backend, parser RequestParser) *RouterDispatcher {
+func NewRouterDispatcher(defaultBackend wasabi.RequestHandler, parser RequestParser) *RouterDispatcher {
 	return &RouterDispatcher{
 		defaultBackend: defaultBackend,
-		backendMap:     make(map[string]wasabi.Backend),
+		backendMap:     make(map[string]wasabi.RequestHandler),
 		parser:         parser,
 	}
 }
 
 // AddBackend adds a backend to the RouterDispatcher for the specified routing keys.
 // If a backend already exists for any of the routing keys, an error is returned.
-func (d *RouterDispatcher) AddBackend(backend wasabi.Backend, routingKeys []string) error {
+func (d *RouterDispatcher) AddBackend(backend wasabi.RequestHandler, routingKeys []string) error {
 	for _, key := range routingKeys {
 		if _, ok := d.backendMap[key]; ok {
 			return fmt.Errorf("backend for routing key %s already exists", key)

@@ -7,7 +7,6 @@ packages:
   github.com/ksysoev/wasabi:
     interfaces:
       Dispatcher:
-      Backend:
       RequestHandler:
       Connection:
       Request:
