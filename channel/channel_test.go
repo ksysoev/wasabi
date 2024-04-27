@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -130,5 +131,18 @@ func TestChannel_WithOriginPatterns(t *testing.T) {
 
 	if channel.config.originPatterns[1] != "test2" {
 		t.Errorf("Unexpected to get default origin pattern: got %s, expected %s", channel.config.originPatterns[1], "test2")
+	}
+}
+func TestChannel_Shutdown(t *testing.T) {
+	path := "/test/path"
+	dispatcher := mocks.NewMockDispatcher(t)
+
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
+
+	// Call the Shutdown method
+	err := channel.Shutdown(context.Background())
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
 	}
 }

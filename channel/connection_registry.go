@@ -107,8 +107,8 @@ func (r *ConnectionRegistry) Shutdown(ctx context.Context) error {
 		wg.Add(1)
 
 		go func() {
+			defer wg.Done()
 			c.Close(ctx, websocket.StatusServiceRestart, "")
-			wg.Done()
 		}()
 	}
 
