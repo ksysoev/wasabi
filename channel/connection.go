@@ -8,6 +8,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 	"nhooyr.io/websocket"
@@ -30,16 +31,18 @@ const (
 
 // Conn is default implementation of Connection
 type Conn struct {
-	ctx         context.Context
-	ws          *websocket.Conn
-	reqWG       *sync.WaitGroup
-	onMessageCB wasabi.OnMessage
-	onClose     chan<- string
-	ctxCancel   context.CancelFunc
-	bufferPool  *bufferPool
-	state       *atomic.Int32
-	sem         chan struct{}
-	id          string
+	ctx             context.Context
+	ws              *websocket.Conn
+	reqWG           *sync.WaitGroup
+	onMessageCB     wasabi.OnMessage
+	onClose         chan<- string
+	ctxCancel       context.CancelFunc
+	bufferPool      *bufferPool
+	state           *atomic.Int32
+	sem             chan struct{}
+	id              string
+	inActiveTimer   *time.Timer
+	inActiveTimeout time.Duration
 }
 
 // NewConnection creates new instance of websocket connection
@@ -55,18 +58,26 @@ func NewConnection(
 	state := atomic.Int32{}
 	state.Store(int32(connected))
 
-	return &Conn{
-		ws:          ws,
-		id:          uuid.New().String(),
-		ctx:         ctx,
-		ctxCancel:   cancel,
-		onMessageCB: cb,
-		onClose:     onClose,
-		reqWG:       &sync.WaitGroup{},
-		state:       &state,
-		bufferPool:  bufferPool,
-		sem:         make(chan struct{}, concurrencyLimit),
+	conn := &Conn{
+		ws:              ws,
+		id:              uuid.New().String(),
+		ctx:             ctx,
+		ctxCancel:       cancel,
+		onMessageCB:     cb,
+		onClose:         onClose,
+		reqWG:           &sync.WaitGroup{},
+		state:           &state,
+		bufferPool:      bufferPool,
+		sem:             make(chan struct{}, concurrencyLimit),
+		inActiveTimeout: time.Second * 30,
 	}
+
+	if conn.inActiveTimeout > 0 {
+		conn.inActiveTimer = time.NewTimer(conn.inActiveTimeout)
+		go conn.watchInactivity()
+	}
+
+	return conn
 }
 
 // ID returns connection id
@@ -85,6 +96,8 @@ func (c *Conn) HandleRequests() {
 
 	for c.ctx.Err() == nil {
 		c.sem <- struct{}{}
+
+		c.inActiveTimer.Reset(c.inActiveTimeout)
 
 		buffer := c.bufferPool.get()
 		msgType, reader, err := c.ws.Reader(c.ctx)
@@ -128,6 +141,8 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 	if c.ctx.Err() != nil {
 		return ErrConnectionClosed
 	}
+
+	c.inActiveTimer.Reset(c.inActiveTimeout)
 
 	return c.ws.Write(c.ctx, msgType, msg)
 }
@@ -181,4 +196,21 @@ func (c *Conn) Close(closingCtx context.Context, status websocket.StatusCode, re
 	c.onClose <- c.id
 
 	return nil
+}
+
+func (c *Conn) watchInactivity() {
+	defer c.inActiveTimer.Stop()
+
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-c.inActiveTimer.C:
+			// TODO: implement method for terminating connetion immitiately
+			ctx, cancel := context.WithCancel(c.ctx)
+			cancel()
+			_ = c.Close(ctx, websocket.StatusGoingAway, "inactivity timeout")
+			return
+		}
+	}
 }
