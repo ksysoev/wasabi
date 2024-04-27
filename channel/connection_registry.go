@@ -21,6 +21,7 @@ type ConnectionRegistry struct {
 	concurrencyLimit uint
 	mu               sync.RWMutex
 	frameSizeLimit   int64
+	isClosed         bool
 }
 
 type ConnectionRegistryOption func(*ConnectionRegistry)
@@ -33,6 +34,7 @@ func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry
 		concurrencyLimit: concurencyLimitPerConnection,
 		bufferPool:       newBufferPool(),
 		frameSizeLimit:   frameSizeLimitInBytes,
+		isClosed:         false,
 	}
 
 	for _, opt := range opts {
@@ -52,6 +54,10 @@ func (r *ConnectionRegistry) AddConnection(
 ) wasabi.Connection {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	if r.isClosed {
+		return nil
+	}
 
 	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit)
 	r.connections[conn.ID()] = conn
@@ -76,6 +82,29 @@ func (r *ConnectionRegistry) handleClose() {
 		delete(r.connections, id)
 		r.mu.Unlock()
 	}
+}
+
+func (r *ConnectionRegistry) Shutdown(ctx context.Context) error {
+	r.mu.Lock()
+	r.isClosed = true
+	connections := make([]wasabi.Connection, 0, len(r.connections))
+	for _, conn := range r.connections {
+		connections = append(connections, conn)
+	}
+	r.mu.Unlock()
+
+	wg := sync.WaitGroup{}
+	for _, conn := range connections {
+		c := conn
+		wg.Add(1)
+		go func() {
+			c.Close(ctx, websocket.StatusServiceRestart, "")
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	return nil
 }
 
 // WithMaxFrameLimit sets the maximum frame size limit for incomming messages to the ConnectionRegistry.

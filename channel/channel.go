@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/ksysoev/wasabi"
@@ -82,6 +83,13 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 // Use adds middlewere to channel
 func (c *Channel) Use(middlewere Middlewere) {
 	c.middlewares = append(c.middlewares, middlewere)
+}
+
+// Shutdown gracefully shuts down the Channel by shutting down the underlying connection registry.
+// It waits for all active connections to be closed or until the context is canceled.
+// Returns an error if the shutdown process encounters any issues.
+func (srv *Channel) Shutdown(ctx context.Context) error {
+	return srv.connRegistry.Shutdown(ctx)
 }
 
 // useMiddleware applies middlewares to handler

@@ -124,6 +124,52 @@ func (_c *MockConnectionRegistry_GetConnection_Call) RunAndReturn(run func(strin
 	return _c
 }
 
+// Shutdown provides a mock function with given fields: ctx
+func (_m *MockConnectionRegistry) Shutdown(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Shutdown")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockConnectionRegistry_Shutdown_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Shutdown'
+type MockConnectionRegistry_Shutdown_Call struct {
+	*mock.Call
+}
+
+// Shutdown is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockConnectionRegistry_Expecter) Shutdown(ctx interface{}) *MockConnectionRegistry_Shutdown_Call {
+	return &MockConnectionRegistry_Shutdown_Call{Call: _e.mock.On("Shutdown", ctx)}
+}
+
+func (_c *MockConnectionRegistry_Shutdown_Call) Run(run func(ctx context.Context)) *MockConnectionRegistry_Shutdown_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockConnectionRegistry_Shutdown_Call) Return(_a0 error) *MockConnectionRegistry_Shutdown_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockConnectionRegistry_Shutdown_Call) RunAndReturn(run func(context.Context) error) *MockConnectionRegistry_Shutdown_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewMockConnectionRegistry creates a new instance of MockConnectionRegistry. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewMockConnectionRegistry(t interface {

@@ -104,6 +104,21 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		}
 	}()
 
+	wg := sync.WaitGroup{}
+	for _, channel := range s.channels {
+		c := channel
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := c.Shutdown(ctx)
+			if err != nil {
+				slog.Error("Error shutting down channel:" + err.Error())
+			}
+		}()
+	}
+
+	wg.Wait()
+
 	select {
 	case <-ctx.Done():
 		return ctx.Err()

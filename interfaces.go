@@ -51,6 +51,7 @@ type RequestHandler interface {
 type Channel interface {
 	Path() string
 	Handler() http.Handler
+	Shutdown(ctx context.Context) error
 }
 
 // ConnectionRegistry is interface for connection registries
@@ -61,4 +62,5 @@ type ConnectionRegistry interface {
 		cb OnMessage,
 	) Connection
 	GetConnection(id string) Connection
+	Shutdown(ctx context.Context) error
 }
