@@ -12,7 +12,7 @@ export default function () {
   const url = 'ws://localhost:8080/';
   const params = { tags: { my_tag: 'hello' } };
 
-  let counter = 100;
+  let counter = 2000;
 
   const res = ws.connect(url, params, function (socket) {
     socket.on('open', () => {

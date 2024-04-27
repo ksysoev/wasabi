@@ -81,7 +81,7 @@ func TestServer_Run(t *testing.T) {
 		go func() {
 			err := server.Run()
 			switch err {
-			case http.ErrServerClosed:
+			case nil:
 				close(done)
 			case ErrServerAlreadyRunning:
 				done <- struct{}{}
@@ -102,6 +102,62 @@ func TestServer_Run(t *testing.T) {
 
 	if err := server.handler.Close(); err != nil {
 		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to stop")
+	}
+}
+func TestServer_Shutdown(t *testing.T) {
+	// Create a new Server instance
+	server := NewServer(":0")
+
+	// Create a context with a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	// Create a mock channel
+	channel := mocks.NewMockChannel(t)
+	channel.EXPECT().Path().Return("/test")
+	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	channel.EXPECT().Shutdown(ctx).Return(nil)
+
+	server.AddChannel(channel)
+
+	defer cancel()
+
+	// Start the server in a separate goroutine
+	done := make(chan struct{})
+
+	// Run the server
+	for i := 0; i < 2; i++ {
+		go func() {
+			err := server.Run()
+			switch err {
+			case nil:
+				close(done)
+			case ErrServerAlreadyRunning:
+				done <- struct{}{}
+			default:
+				t.Errorf("Got unexpected error: %v", err)
+			}
+		}()
+	}
+
+	select {
+	case _, ok := <-done:
+		if !ok {
+			t.Error("Expected server to start")
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
+	}
+
+	// Call the Shutdown method
+	err := server.Shutdown(ctx)
+	if err != nil {
+		t.Errorf("Unexpected error shutting down server: %v", err)
 	}
 
 	select {

@@ -95,3 +95,32 @@ func TestConnectionRegistry_WithMaxFrameLimit(t *testing.T) {
 		t.Errorf("Unexpected frame size limit: got %d, expected %d", registry.frameSizeLimit, 100)
 	}
 }
+func TestConnectionRegistry_Shutdown(t *testing.T) {
+	ctx := context.Background()
+	registry := NewConnectionRegistry()
+
+	// Add some mock connections to the registry
+	conn1 := mocks.NewMockConnection(t)
+	conn2 := mocks.NewMockConnection(t)
+
+	conn1.EXPECT().ID().Return("conn1")
+	conn2.EXPECT().ID().Return("conn2")
+
+	registry.connections[conn1.ID()] = conn1
+	registry.connections[conn2.ID()] = conn2
+
+	// Set up expectations for the Close method
+	conn1.EXPECT().Close(ctx, websocket.StatusServiceRestart, "").Return(nil)
+	conn2.EXPECT().Close(ctx, websocket.StatusServiceRestart, "").Return(nil)
+
+	err := registry.Shutdown(ctx)
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	// Verify that the registry is closed
+	if !registry.isClosed {
+		t.Error("Expected registry to be closed")
+	}
+}

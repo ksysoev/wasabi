@@ -116,35 +116,48 @@ func (_c *MockChannel_Path_Call) RunAndReturn(run func() string) *MockChannel_Pa
 	return _c
 }
 
-// SetContext provides a mock function with given fields: ctx
-func (_m *MockChannel) SetContext(ctx context.Context) {
-	_m.Called(ctx)
+// Shutdown provides a mock function with given fields: ctx
+func (_m *MockChannel) Shutdown(ctx context.Context) error {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Shutdown")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = rf(ctx)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
-// MockChannel_SetContext_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetContext'
-type MockChannel_SetContext_Call struct {
+// MockChannel_Shutdown_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Shutdown'
+type MockChannel_Shutdown_Call struct {
 	*mock.Call
 }
 
-// SetContext is a helper method to define mock.On call
+// Shutdown is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockChannel_Expecter) SetContext(ctx interface{}) *MockChannel_SetContext_Call {
-	return &MockChannel_SetContext_Call{Call: _e.mock.On("SetContext", ctx)}
+func (_e *MockChannel_Expecter) Shutdown(ctx interface{}) *MockChannel_Shutdown_Call {
+	return &MockChannel_Shutdown_Call{Call: _e.mock.On("Shutdown", ctx)}
 }
 
-func (_c *MockChannel_SetContext_Call) Run(run func(ctx context.Context)) *MockChannel_SetContext_Call {
+func (_c *MockChannel_Shutdown_Call) Run(run func(ctx context.Context)) *MockChannel_Shutdown_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context))
 	})
 	return _c
 }
 
-func (_c *MockChannel_SetContext_Call) Return() *MockChannel_SetContext_Call {
-	_c.Call.Return()
+func (_c *MockChannel_Shutdown_Call) Return(_a0 error) *MockChannel_Shutdown_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockChannel_SetContext_Call) RunAndReturn(run func(context.Context)) *MockChannel_SetContext_Call {
+func (_c *MockChannel_Shutdown_Call) RunAndReturn(run func(context.Context) error) *MockChannel_Shutdown_Call {
 	_c.Call.Return(run)
 	return _c
 }

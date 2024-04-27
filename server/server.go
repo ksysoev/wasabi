@@ -84,7 +84,58 @@ func (s *Server) Run() error {
 
 	slog.Info("Starting app server on " + s.addr)
 
-	return s.handler.ListenAndServe()
+	err := s.handler.ListenAndServe()
+
+	if err != nil && err != http.ErrServerClosed {
+		return err
+	}
+
+	return nil
+}
+
+// Shutdown gracefully shuts down the server and all its channels.
+// It waits for all channels to be shut down before returning.
+// If the context is canceled before all channels are shut down, it returns the context error.
+// If any error occurs during the shutdown process, it returns the first error encountered.
+func (s *Server) Shutdown(ctx context.Context) error {
+	done := make(chan error)
+
+	go func() {
+		defer close(done)
+
+		if err := s.handler.Shutdown(ctx); err != nil {
+			done <- err
+		}
+	}()
+
+	wg := sync.WaitGroup{}
+
+	for _, channel := range s.channels {
+		c := channel
+
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			if err := c.Shutdown(ctx); err != nil {
+				slog.Error("Error shutting down channel:" + err.Error())
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err, ok := <-done:
+		if !ok {
+			return nil
+		}
+
+		return err
+	}
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.
