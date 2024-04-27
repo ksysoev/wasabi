@@ -124,3 +124,16 @@ func TestConnectionRegistry_Shutdown(t *testing.T) {
 		t.Error("Expected registry to be closed")
 	}
 }
+func TestConnectionRegistry_WithConcurrencyLimit(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if registry.concurrencyLimit != concurencyLimitPerConnection {
+		t.Errorf("Unexpected concurrency limit: got %d, expected %d", registry.concurrencyLimit, concurencyLimitPerConnection)
+	}
+
+	registry = NewConnectionRegistry(WithConcurrencyLimit(10))
+
+	if registry.concurrencyLimit != 10 {
+		t.Errorf("Unexpected concurrency limit: got %d, expected %d", registry.concurrencyLimit, 10)
+	}
+}

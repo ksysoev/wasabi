@@ -128,3 +128,12 @@ func WithMaxFrameLimit(limit int64) ConnectionRegistryOption {
 		r.frameSizeLimit = limit
 	}
 }
+
+// WithConcurrencyLimit sets the maximum number of concurrent requests that can be handled by a connection.
+// The default concurrency limit is 25.
+// When the concurrency limit is exceeded, the connection stops reading messages until the number of concurrent requests decreases.
+func WithConcurrencyLimit(limit uint) ConnectionRegistryOption {
+	return func(r *ConnectionRegistry) {
+		r.concurrencyLimit = limit
+	}
+}
