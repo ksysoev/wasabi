@@ -84,19 +84,28 @@ func (r *ConnectionRegistry) handleClose() {
 	}
 }
 
+// Shutdown closes all connections in the ConnectionRegistry.
+// It sets the isClosed flag to true, indicating that the registry is closed.
+// It then iterates over all connections, closes them with the given context,
+// and waits for all closures to complete before returning.
 func (r *ConnectionRegistry) Shutdown(ctx context.Context) error {
 	r.mu.Lock()
 	r.isClosed = true
 	connections := make([]wasabi.Connection, 0, len(r.connections))
+
 	for _, conn := range r.connections {
 		connections = append(connections, conn)
 	}
+
 	r.mu.Unlock()
 
 	wg := sync.WaitGroup{}
+
 	for _, conn := range connections {
 		c := conn
+
 		wg.Add(1)
+
 		go func() {
 			c.Close(ctx, websocket.StatusServiceRestart, "")
 			wg.Done()
@@ -104,6 +113,7 @@ func (r *ConnectionRegistry) Shutdown(ctx context.Context) error {
 	}
 
 	wg.Wait()
+
 	return nil
 }
 

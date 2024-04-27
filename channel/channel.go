@@ -88,8 +88,8 @@ func (c *Channel) Use(middlewere Middlewere) {
 // Shutdown gracefully shuts down the Channel by shutting down the underlying connection registry.
 // It waits for all active connections to be closed or until the context is canceled.
 // Returns an error if the shutdown process encounters any issues.
-func (srv *Channel) Shutdown(ctx context.Context) error {
-	return srv.connRegistry.Shutdown(ctx)
+func (c *Channel) Shutdown(ctx context.Context) error {
+	return c.connRegistry.Shutdown(ctx)
 }
 
 // useMiddleware applies middlewares to handler
