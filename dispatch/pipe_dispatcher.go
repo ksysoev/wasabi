@@ -9,12 +9,12 @@ import (
 // PipeDispatcher is a dispatcher that does not support any routing of requests
 // but for single backend API gateways is enough
 type PipeDispatcher struct {
-	backend     wasabi.Backend
+	backend     wasabi.RequestHandler
 	middlewares []RequestMiddlewere
 }
 
 // NewPipeDispatcher creates new instance of PipeDispatcher
-func NewPipeDispatcher(backend wasabi.Backend) *PipeDispatcher {
+func NewPipeDispatcher(backend wasabi.RequestHandler) *PipeDispatcher {
 	return &PipeDispatcher{backend: backend}
 }
 
