@@ -40,8 +40,8 @@ type Conn struct {
 	bufferPool      *bufferPool
 	state           *atomic.Int32
 	sem             chan struct{}
-	id              string
 	inActiveTimer   *time.Timer
+	id              string
 	inActiveTimeout time.Duration
 }
 
@@ -53,6 +53,7 @@ func NewConnection(
 	onClose chan<- string,
 	bufferPool *bufferPool,
 	concurrencyLimit uint,
+	inActivityTimeout time.Duration,
 ) *Conn {
 	ctx, cancel := context.WithCancel(ctx)
 	state := atomic.Int32{}
@@ -69,7 +70,7 @@ func NewConnection(
 		state:           &state,
 		bufferPool:      bufferPool,
 		sem:             make(chan struct{}, concurrencyLimit),
-		inActiveTimeout: time.Second * 30,
+		inActiveTimeout: inActivityTimeout,
 	}
 
 	if conn.inActiveTimeout > 0 {
@@ -97,7 +98,9 @@ func (c *Conn) HandleRequests() {
 	for c.ctx.Err() == nil {
 		c.sem <- struct{}{}
 
-		c.inActiveTimer.Reset(c.inActiveTimeout)
+		if c.inActiveTimeout > 0 {
+			c.inActiveTimer.Reset(c.inActiveTimeout)
+		}
 
 		buffer := c.bufferPool.get()
 		msgType, reader, err := c.ws.Reader(c.ctx)
@@ -142,7 +145,9 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		return ErrConnectionClosed
 	}
 
-	c.inActiveTimer.Reset(c.inActiveTimeout)
+	if c.inActiveTimeout > 0 {
+		c.inActiveTimer.Reset(c.inActiveTimeout)
+	}
 
 	return c.ws.Write(c.ctx, msgType, msg)
 }
@@ -209,7 +214,9 @@ func (c *Conn) watchInactivity() {
 			// TODO: implement method for terminating connetion immitiately
 			ctx, cancel := context.WithCancel(c.ctx)
 			cancel()
+
 			_ = c.Close(ctx, websocket.StatusGoingAway, "inactivity timeout")
+
 			return
 		}
 	}
