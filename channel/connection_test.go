@@ -262,3 +262,38 @@ func TestConn_watchInactivity(t *testing.T) {
 		t.Error("Expected connection to be closed due to inactivity")
 	}
 }
+
+func TestConn_watchInactivity_stopping_timer(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
+
+	onClose := make(chan string, 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+
+	ctxClose, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	conn.Close(ctxClose, websocket.StatusNormalClosure, "")
+
+	select {
+	case <-conn.inActiveTimer.C:
+		t.Error("Expected inactivity timer to be stopped")
+	case <-time.After(20 * time.Millisecond):
+		isStopped := conn.inActiveTimer.Stop()
+		if isStopped {
+			t.Error("Expected inactivity timer to be already stopped")
+		}
+	}
+}
