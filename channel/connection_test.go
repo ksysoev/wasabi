@@ -245,8 +245,10 @@ func TestConn_watchInactivity(t *testing.T) {
 	}
 
 	defer func() { _ = ws.CloseNow() }()
+
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+
 	defer conn.Close(context.Background(), websocket.StatusNormalClosure, "")
 
 	// Wait for the inactivity timeout to trigger
