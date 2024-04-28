@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
@@ -135,5 +136,18 @@ func TestConnectionRegistry_WithConcurrencyLimit(t *testing.T) {
 
 	if registry.concurrencyLimit != 10 {
 		t.Errorf("Unexpected concurrency limit: got %d, expected %d", registry.concurrencyLimit, 10)
+	}
+}
+func TestConnectionRegistry_WithInActivityTimeout(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if registry.inActivityTimeout != 0 {
+		t.Errorf("Unexpected inactivity timeout: got %v, expected %v", registry.inActivityTimeout, 0)
+	}
+
+	registry = NewConnectionRegistry(WithInActivityTimeout(5 * time.Minute))
+
+	if registry.inActivityTimeout != 5*time.Minute {
+		t.Errorf("Unexpected inactivity timeout: got %s, expected %s", registry.inActivityTimeout, 5*time.Minute)
 	}
 }
