@@ -203,6 +203,8 @@ func (c *Conn) Close(closingCtx context.Context, status websocket.StatusCode, re
 	return nil
 }
 
+// watchInactivity watches for inactivity on the connection.
+// If the connection is inactive for the specified duration, it closes the connection.
 func (c *Conn) watchInactivity() {
 	defer c.inActiveTimer.Stop()
 
