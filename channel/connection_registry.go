@@ -3,6 +3,7 @@ package channel
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/ksysoev/wasabi"
 	"nhooyr.io/websocket"
@@ -11,17 +12,19 @@ import (
 const (
 	concurencyLimitPerConnection = 25
 	frameSizeLimitInBytes        = 32768
+	inActivityTimeout            = 0 * time.Second
 )
 
 // ConnectionRegistry is default implementation of ConnectionRegistry
 type ConnectionRegistry struct {
-	connections      map[string]wasabi.Connection
-	onClose          chan string
-	bufferPool       *bufferPool
-	concurrencyLimit uint
-	mu               sync.RWMutex
-	frameSizeLimit   int64
-	isClosed         bool
+	connections       map[string]wasabi.Connection
+	onClose           chan string
+	bufferPool        *bufferPool
+	concurrencyLimit  uint
+	mu                sync.RWMutex
+	frameSizeLimit    int64
+	isClosed          bool
+	inActivityTimeout time.Duration
 }
 
 type ConnectionRegistryOption func(*ConnectionRegistry)
@@ -59,7 +62,7 @@ func (r *ConnectionRegistry) AddConnection(
 		return nil
 	}
 
-	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit)
+	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit, r.inActivityTimeout)
 	r.connections[conn.ID()] = conn
 
 	conn.ws.SetReadLimit(r.frameSizeLimit)
@@ -135,5 +138,14 @@ func WithMaxFrameLimit(limit int64) ConnectionRegistryOption {
 func WithConcurrencyLimit(limit uint) ConnectionRegistryOption {
 	return func(r *ConnectionRegistry) {
 		r.concurrencyLimit = limit
+	}
+}
+
+// WithInActivityTimeout sets the inactivity timeout for the connection.
+// The default inactivity timeout is 0 seconds, which means the timeout is disabled.
+// When the inactivity timeout is enabled, the connection is closed if there are no messages received within the specified duration.
+func WithInActivityTimeout(timeout time.Duration) ConnectionRegistryOption {
+	return func(r *ConnectionRegistry) {
+		r.inActivityTimeout = timeout
 	}
 }

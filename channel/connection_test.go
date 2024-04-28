@@ -48,7 +48,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 func TestConn_ID(t *testing.T) {
 	ws := &websocket.Conn{}
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
 
 	if conn.ID() == "" {
 		t.Error("Expected connection ID to be non-empty")
@@ -58,7 +58,7 @@ func TestConn_ID(t *testing.T) {
 func TestConn_Context(t *testing.T) {
 	ws := &websocket.Conn{}
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
 
 	if conn.Context() == nil {
 		t.Error("Expected connection context to be non-nil")
@@ -84,7 +84,7 @@ func TestConn_HandleRequests(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
 
 	// Mock OnMessage callback
 	received := make(chan struct{})
@@ -124,7 +124,7 @@ func TestConn_Send(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
 
 	err = conn.Send(wasabi.MsgTypeText, []byte("test message"))
 	if err != nil {
@@ -149,7 +149,7 @@ func TestConn_close(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
 
 	// Mock OnClose channel
 	closeChan := make(chan string)
@@ -189,7 +189,7 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 
 	ctx := context.Background()
 	closedChan := make(chan string, 1)
-	c := NewConnection(ctx, ws, nil, closedChan, newBufferPool(), 1)
+	c := NewConnection(ctx, ws, nil, closedChan, newBufferPool(), 1, 0)
 
 	c.reqWG.Add(1)
 
@@ -215,7 +215,7 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 func TestConn_Close_AlreadyClosed(t *testing.T) {
 	closedChan := make(chan string, 1)
 
-	c := NewConnection(context.Background(), &websocket.Conn{}, nil, closedChan, newBufferPool(), 1)
+	c := NewConnection(context.Background(), &websocket.Conn{}, nil, closedChan, newBufferPool(), 1, 0)
 	c.state.Store(int32(terminated))
 
 	err := c.Close(context.Background(), websocket.StatusNormalClosure, "test reason")
@@ -227,5 +227,73 @@ func TestConn_Close_AlreadyClosed(t *testing.T) {
 	case <-closedChan:
 		t.Error("Expected OnClose channel to not be called")
 	default:
+	}
+}
+
+func TestConn_watchInactivity(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
+
+	onClose := make(chan string)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+
+	defer conn.Close(context.Background(), websocket.StatusNormalClosure, "")
+
+	// Wait for the inactivity timeout to trigger
+	time.Sleep(20 * time.Millisecond)
+
+	// Check if the connection was closed due to inactivity
+	select {
+	case <-onClose:
+		// Expected
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be closed due to inactivity")
+	}
+}
+
+func TestConn_watchInactivity_stopping_timer(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
+
+	onClose := make(chan string, 1)
+	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+
+	ctxClose, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	conn.Close(ctxClose, websocket.StatusNormalClosure, "")
+
+	select {
+	case <-conn.inActiveTimer.C:
+		t.Error("Expected inactivity timer to be stopped")
+	case <-time.After(20 * time.Millisecond):
+		isStopped := conn.inActiveTimer.Stop()
+		if isStopped {
+			t.Error("Expected inactivity timer to be already stopped")
+		}
 	}
 }
