@@ -186,6 +186,7 @@ func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...c
 	if len(closingCtx) > 0 {
 		ctx := closingCtx[0]
 		done := make(chan struct{})
+
 		go func() {
 			c.reqWG.Wait()
 			close(done)
@@ -196,7 +197,6 @@ func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...c
 		case <-done: // If there are no pending requests, we can close the connection immediately.
 		case <-c.ctx.Done(): // If the connection is already closed, we should not wait for pending requests.
 		}
-
 	}
 
 	_ = c.ws.Close(status, reason)
