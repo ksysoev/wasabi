@@ -121,7 +121,7 @@ func TestServer_Shutdown(t *testing.T) {
 	channel := mocks.NewMockChannel(t)
 	channel.EXPECT().Path().Return("/test")
 	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	channel.EXPECT().Shutdown(ctx).Return(nil)
+	channel.EXPECT().Close(ctx).Return(nil)
 
 	server.AddChannel(channel)
 
@@ -155,7 +155,7 @@ func TestServer_Shutdown(t *testing.T) {
 	}
 
 	// Call the Shutdown method
-	err := server.Shutdown(ctx)
+	err := server.Close(ctx)
 	if err != nil {
 		t.Errorf("Unexpected error shutting down server: %v", err)
 	}

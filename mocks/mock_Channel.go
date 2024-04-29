@@ -24,6 +24,65 @@ func (_m *MockChannel) EXPECT() *MockChannel_Expecter {
 	return &MockChannel_Expecter{mock: &_m.Mock}
 }
 
+// Close provides a mock function with given fields: ctx
+func (_m *MockChannel) Close(ctx ...context.Context) error {
+	_va := make([]interface{}, len(ctx))
+	for _i := range ctx {
+		_va[_i] = ctx[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(...context.Context) error); ok {
+		r0 = rf(ctx...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockChannel_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
+type MockChannel_Close_Call struct {
+	*mock.Call
+}
+
+// Close is a helper method to define mock.On call
+//   - ctx ...context.Context
+func (_e *MockChannel_Expecter) Close(ctx ...interface{}) *MockChannel_Close_Call {
+	return &MockChannel_Close_Call{Call: _e.mock.On("Close",
+		append([]interface{}{}, ctx...)...)}
+}
+
+func (_c *MockChannel_Close_Call) Run(run func(ctx ...context.Context)) *MockChannel_Close_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]context.Context, len(args)-0)
+		for i, a := range args[0:] {
+			if a != nil {
+				variadicArgs[i] = a.(context.Context)
+			}
+		}
+		run(variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockChannel_Close_Call) Return(_a0 error) *MockChannel_Close_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockChannel_Close_Call) RunAndReturn(run func(...context.Context) error) *MockChannel_Close_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Handler provides a mock function with given fields:
 func (_m *MockChannel) Handler() http.Handler {
 	ret := _m.Called()
@@ -112,52 +171,6 @@ func (_c *MockChannel_Path_Call) Return(_a0 string) *MockChannel_Path_Call {
 }
 
 func (_c *MockChannel_Path_Call) RunAndReturn(run func() string) *MockChannel_Path_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Shutdown provides a mock function with given fields: ctx
-func (_m *MockChannel) Shutdown(ctx context.Context) error {
-	ret := _m.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Shutdown")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockChannel_Shutdown_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Shutdown'
-type MockChannel_Shutdown_Call struct {
-	*mock.Call
-}
-
-// Shutdown is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockChannel_Expecter) Shutdown(ctx interface{}) *MockChannel_Shutdown_Call {
-	return &MockChannel_Shutdown_Call{Call: _e.mock.On("Shutdown", ctx)}
-}
-
-func (_c *MockChannel_Shutdown_Call) Run(run func(ctx context.Context)) *MockChannel_Shutdown_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *MockChannel_Shutdown_Call) Return(_a0 error) *MockChannel_Shutdown_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockChannel_Shutdown_Call) RunAndReturn(run func(context.Context) error) *MockChannel_Shutdown_Call {
 	_c.Call.Return(run)
 	return _c
 }

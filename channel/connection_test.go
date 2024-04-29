@@ -197,7 +197,7 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 		c.reqWG.Done()
 	}()
 
-	err = c.Close(ctx, websocket.StatusNormalClosure, "test reason")
+	err = c.Close(websocket.StatusNormalClosure, "test reason", ctx)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestConn_Close_AlreadyClosed(t *testing.T) {
 	c := NewConnection(context.Background(), &websocket.Conn{}, nil, closedChan, newBufferPool(), 1, 0)
 	c.state.Store(int32(terminated))
 
-	err := c.Close(context.Background(), websocket.StatusNormalClosure, "test reason")
+	err := c.Close(websocket.StatusNormalClosure, "test reason", context.Background())
 	if err != ErrConnectionClosed {
 		t.Errorf("Expected error to be %v, but got %v", ErrConnectionClosed, err)
 	}
@@ -249,7 +249,7 @@ func TestConn_watchInactivity(t *testing.T) {
 	onClose := make(chan string)
 	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
 
-	defer conn.Close(context.Background(), websocket.StatusNormalClosure, "")
+	defer conn.Close(websocket.StatusNormalClosure, "", context.Background())
 
 	// Wait for the inactivity timeout to trigger
 	time.Sleep(20 * time.Millisecond)
@@ -285,7 +285,7 @@ func TestConn_watchInactivity_stopping_timer(t *testing.T) {
 	ctxClose, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	conn.Close(ctxClose, websocket.StatusNormalClosure, "")
+	conn.Close(websocket.StatusNormalClosure, "", ctxClose)
 
 	select {
 	case <-conn.inActiveTimer.C:

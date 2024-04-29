@@ -111,10 +111,10 @@ func TestConnectionRegistry_Shutdown(t *testing.T) {
 	registry.connections[conn2.ID()] = conn2
 
 	// Set up expectations for the Close method
-	conn1.EXPECT().Close(ctx, websocket.StatusServiceRestart, "").Return(nil)
-	conn2.EXPECT().Close(ctx, websocket.StatusServiceRestart, "").Return(nil)
+	conn1.EXPECT().Close(websocket.StatusServiceRestart, "", ctx).Return(nil)
+	conn2.EXPECT().Close(websocket.StatusServiceRestart, "", ctx).Return(nil)
 
-	err := registry.Shutdown(ctx)
+	err := registry.Close(ctx)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)

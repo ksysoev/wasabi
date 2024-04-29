@@ -76,6 +76,65 @@ func (_c *MockConnectionRegistry_AddConnection_Call) RunAndReturn(run func(conte
 	return _c
 }
 
+// Close provides a mock function with given fields: ctx
+func (_m *MockConnectionRegistry) Close(ctx ...context.Context) error {
+	_va := make([]interface{}, len(ctx))
+	for _i := range ctx {
+		_va[_i] = ctx[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(...context.Context) error); ok {
+		r0 = rf(ctx...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockConnectionRegistry_Close_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Close'
+type MockConnectionRegistry_Close_Call struct {
+	*mock.Call
+}
+
+// Close is a helper method to define mock.On call
+//   - ctx ...context.Context
+func (_e *MockConnectionRegistry_Expecter) Close(ctx ...interface{}) *MockConnectionRegistry_Close_Call {
+	return &MockConnectionRegistry_Close_Call{Call: _e.mock.On("Close",
+		append([]interface{}{}, ctx...)...)}
+}
+
+func (_c *MockConnectionRegistry_Close_Call) Run(run func(ctx ...context.Context)) *MockConnectionRegistry_Close_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]context.Context, len(args)-0)
+		for i, a := range args[0:] {
+			if a != nil {
+				variadicArgs[i] = a.(context.Context)
+			}
+		}
+		run(variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockConnectionRegistry_Close_Call) Return(_a0 error) *MockConnectionRegistry_Close_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockConnectionRegistry_Close_Call) RunAndReturn(run func(...context.Context) error) *MockConnectionRegistry_Close_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetConnection provides a mock function with given fields: id
 func (_m *MockConnectionRegistry) GetConnection(id string) wasabi.Connection {
 	ret := _m.Called(id)
@@ -120,52 +179,6 @@ func (_c *MockConnectionRegistry_GetConnection_Call) Return(_a0 wasabi.Connectio
 }
 
 func (_c *MockConnectionRegistry_GetConnection_Call) RunAndReturn(run func(string) wasabi.Connection) *MockConnectionRegistry_GetConnection_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Shutdown provides a mock function with given fields: ctx
-func (_m *MockConnectionRegistry) Shutdown(ctx context.Context) error {
-	ret := _m.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Shutdown")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockConnectionRegistry_Shutdown_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Shutdown'
-type MockConnectionRegistry_Shutdown_Call struct {
-	*mock.Call
-}
-
-// Shutdown is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockConnectionRegistry_Expecter) Shutdown(ctx interface{}) *MockConnectionRegistry_Shutdown_Call {
-	return &MockConnectionRegistry_Shutdown_Call{Call: _e.mock.On("Shutdown", ctx)}
-}
-
-func (_c *MockConnectionRegistry_Shutdown_Call) Run(run func(ctx context.Context)) *MockConnectionRegistry_Shutdown_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *MockConnectionRegistry_Shutdown_Call) Return(_a0 error) *MockConnectionRegistry_Shutdown_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockConnectionRegistry_Shutdown_Call) RunAndReturn(run func(context.Context) error) *MockConnectionRegistry_Shutdown_Call {
 	_c.Call.Return(run)
 	return _c
 }

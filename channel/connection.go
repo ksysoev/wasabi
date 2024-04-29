@@ -171,27 +171,32 @@ func (c *Conn) close() {
 	c.reqWG.Wait()
 }
 
-// Close closes the connection with the specified status and reason.
-// If the connection is already closed or in the process of closing, it returns ErrConnectionClosed.
-// If the closingCtx is canceled, the connection is closed immediately.
-// If there are no pending requests, the connection is closed immediately.
-// If the connection is already closed, it does not wait for pending requests.
-// After closing the connection, the state is set to terminated and the onClose channel is notified with the connection ID.
-func (c *Conn) Close(closingCtx context.Context, status websocket.StatusCode, reason string) error {
+// Close closes the connection with the specified status code and reason.
+// If the connection is already closed, it returns an error.
+// If a closing context is provided, it waits for pending requests to complete
+// before closing the connection. If the context is canceled, the connection
+// is closed immediately. If there are no pending requests, the connection is
+// closed immediately. After closing the connection, the connection state is
+// set to terminated and the `onClose` channel is notified with the connection ID.
+func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
 	if !c.state.CompareAndSwap(int32(connected), int32(closing)) {
 		return ErrConnectionClosed
 	}
 
-	done := make(chan struct{})
-	go func() {
-		c.reqWG.Wait()
-		close(done)
-	}()
+	if len(closingCtx) > 0 {
+		ctx := closingCtx[0]
+		done := make(chan struct{})
+		go func() {
+			c.reqWG.Wait()
+			close(done)
+		}()
 
-	select {
-	case <-closingCtx.Done(): // If the context is canceled, we should close the connection immediately.
-	case <-done: // If there are no pending requests, we can close the connection immediately.
-	case <-c.ctx.Done(): // If the connection is already closed, we should not wait for pending requests.
+		select {
+		case <-ctx.Done(): // If the context is canceled, we should close the connection immediately.
+		case <-done: // If there are no pending requests, we can close the connection immediately.
+		case <-c.ctx.Done(): // If the connection is already closed, we should not wait for pending requests.
+		}
+
 	}
 
 	_ = c.ws.Close(status, reason)
@@ -213,12 +218,7 @@ func (c *Conn) watchInactivity() {
 		case <-c.ctx.Done():
 			return
 		case <-c.inActiveTimer.C:
-			// TODO: implement method for terminating connetion immitiately
-			ctx, cancel := context.WithCancel(c.ctx)
-			cancel()
-
-			_ = c.Close(ctx, websocket.StatusGoingAway, "inactivity timeout")
-
+			_ = c.Close(websocket.StatusGoingAway, "inactivity timeout")
 			return
 		}
 	}
