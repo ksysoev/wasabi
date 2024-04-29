@@ -97,15 +97,18 @@ func (s *Server) Run() error {
 // It waits for all channels to be shut down before returning.
 // If the context is canceled before all channels are shut down, it returns the context error.
 // If any error occurs during the shutdown process, it returns the first error encountered.
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *Server) Close(ctx ...context.Context) error {
 	done := make(chan error)
 
 	go func() {
 		defer close(done)
 
-		if err := s.handler.Shutdown(ctx); err != nil {
-			done <- err
+		if len(ctx) > 0 {
+			done <- s.handler.Shutdown(ctx[0])
+			return
 		}
+
+		done <- s.handler.Close()
 	}()
 
 	wg := sync.WaitGroup{}
@@ -118,7 +121,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		go func() {
 			defer wg.Done()
 
-			if err := c.Shutdown(ctx); err != nil {
+			if err := c.Close(ctx...); err != nil {
 				slog.Error("Error shutting down channel:" + err.Error())
 			}
 		}()
@@ -126,16 +129,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 	wg.Wait()
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err, ok := <-done:
-		if !ok {
-			return nil
-		}
-
-		return err
-	}
+	return <-done
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.

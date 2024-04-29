@@ -25,17 +25,24 @@ func (_m *MockConnection) EXPECT() *MockConnection_Expecter {
 	return &MockConnection_Expecter{mock: &_m.Mock}
 }
 
-// Close provides a mock function with given fields: closingCtx, status, reason
-func (_m *MockConnection) Close(closingCtx context.Context, status websocket.StatusCode, reason string) error {
-	ret := _m.Called(closingCtx, status, reason)
+// Close provides a mock function with given fields: status, reason, closingCtx
+func (_m *MockConnection) Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
+	_va := make([]interface{}, len(closingCtx))
+	for _i := range closingCtx {
+		_va[_i] = closingCtx[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, status, reason)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Close")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, websocket.StatusCode, string) error); ok {
-		r0 = rf(closingCtx, status, reason)
+	if rf, ok := ret.Get(0).(func(websocket.StatusCode, string, ...context.Context) error); ok {
+		r0 = rf(status, reason, closingCtx...)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -49,16 +56,23 @@ type MockConnection_Close_Call struct {
 }
 
 // Close is a helper method to define mock.On call
-//   - closingCtx context.Context
 //   - status websocket.StatusCode
 //   - reason string
-func (_e *MockConnection_Expecter) Close(closingCtx interface{}, status interface{}, reason interface{}) *MockConnection_Close_Call {
-	return &MockConnection_Close_Call{Call: _e.mock.On("Close", closingCtx, status, reason)}
+//   - closingCtx ...context.Context
+func (_e *MockConnection_Expecter) Close(status interface{}, reason interface{}, closingCtx ...interface{}) *MockConnection_Close_Call {
+	return &MockConnection_Close_Call{Call: _e.mock.On("Close",
+		append([]interface{}{status, reason}, closingCtx...)...)}
 }
 
-func (_c *MockConnection_Close_Call) Run(run func(closingCtx context.Context, status websocket.StatusCode, reason string)) *MockConnection_Close_Call {
+func (_c *MockConnection_Close_Call) Run(run func(status websocket.StatusCode, reason string, closingCtx ...context.Context)) *MockConnection_Close_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(websocket.StatusCode), args[2].(string))
+		variadicArgs := make([]context.Context, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(context.Context)
+			}
+		}
+		run(args[0].(websocket.StatusCode), args[1].(string), variadicArgs...)
 	})
 	return _c
 }
@@ -68,7 +82,7 @@ func (_c *MockConnection_Close_Call) Return(_a0 error) *MockConnection_Close_Cal
 	return _c
 }
 
-func (_c *MockConnection_Close_Call) RunAndReturn(run func(context.Context, websocket.StatusCode, string) error) *MockConnection_Close_Call {
+func (_c *MockConnection_Close_Call) RunAndReturn(run func(websocket.StatusCode, string, ...context.Context) error) *MockConnection_Close_Call {
 	_c.Call.Return(run)
 	return _c
 }

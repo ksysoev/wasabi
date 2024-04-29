@@ -35,7 +35,7 @@ type Connection interface {
 	Context() context.Context
 	ID() string
 	HandleRequests()
-	Close(closingCtx context.Context, status websocket.StatusCode, reason string) error
+	Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error
 }
 
 // RequestHandler is interface for request handlers
@@ -47,7 +47,7 @@ type RequestHandler interface {
 type Channel interface {
 	Path() string
 	Handler() http.Handler
-	Shutdown(ctx context.Context) error
+	Close(ctx ...context.Context) error
 }
 
 // ConnectionRegistry is interface for connection registries
@@ -58,5 +58,5 @@ type ConnectionRegistry interface {
 		cb OnMessage,
 	) Connection
 	GetConnection(id string) Connection
-	Shutdown(ctx context.Context) error
+	Close(ctx ...context.Context) error
 }
