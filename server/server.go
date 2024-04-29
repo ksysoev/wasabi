@@ -103,7 +103,7 @@ func (s *Server) Close(ctx ...context.Context) error {
 	go func() {
 		defer close(done)
 
-		if len(s.channels) > 0 {
+		if len(ctx) > 0 {
 			done <- s.handler.Shutdown(ctx[0])
 			return
 		}

@@ -178,13 +178,12 @@ func (c *Conn) close() {
 // is closed immediately. If there are no pending requests, the connection is
 // closed immediately. After closing the connection, the connection state is
 // set to terminated and the `onClose` channel is notified with the connection ID.
-func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
+func (c *Conn) Close(status websocket.StatusCode, reason string, ctx ...context.Context) error {
 	if !c.state.CompareAndSwap(int32(connected), int32(closing)) {
 		return ErrConnectionClosed
 	}
 
-	if len(closingCtx) > 0 {
-		ctx := closingCtx[0]
+	if len(ctx) > 0 {
 		done := make(chan struct{})
 
 		go func() {
@@ -193,7 +192,7 @@ func (c *Conn) Close(status websocket.StatusCode, reason string, closingCtx ...c
 		}()
 
 		select {
-		case <-ctx.Done(): // If the context is canceled, we should close the connection immediately.
+		case <-ctx[0].Done(): // If the context is canceled, we should close the connection immediately.
 		case <-done: // If there are no pending requests, we can close the connection immediately.
 		case <-c.ctx.Done(): // If the connection is already closed, we should not wait for pending requests.
 		}

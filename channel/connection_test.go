@@ -212,6 +212,40 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 	}
 }
 
+func TestConn_Close_NoContext(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	defer func() { _ = ws.CloseNow() }()
+
+	closedChan := make(chan string, 1)
+	c := NewConnection(context.Background(), ws, nil, closedChan, newBufferPool(), 1, 0)
+
+	err = c.Close(websocket.StatusNormalClosure, "test reason")
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	select {
+	case id := <-closedChan:
+		if id != c.id {
+			t.Errorf("Expected ID to be %s, but got %s", c.id, id)
+		}
+	default:
+		t.Error("Expected OnClose channel to be called")
+	}
+}
+
 func TestConn_Close_AlreadyClosed(t *testing.T) {
 	closedChan := make(chan string, 1)
 
