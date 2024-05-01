@@ -151,3 +151,45 @@ func TestConnectionRegistry_WithInActivityTimeout(t *testing.T) {
 		t.Errorf("Unexpected inactivity timeout: got %s, expected %s", registry.inActivityTimeout, 5*time.Minute)
 	}
 }
+func TestConnectionRegistry_WithOnConnect(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if registry.onConnect != nil {
+		t.Error("Expected onConnect callback to be nil")
+	}
+
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	executed := false
+	cb := func(conn wasabi.Connection) {
+		if conn == nil {
+			t.Error("Expected connection to be passed to onConnect callback")
+		}
+
+		executed = true
+	}
+
+	registry = NewConnectionRegistry(WithOnConnect(cb))
+
+	if registry.onConnect == nil {
+		t.Error("Expected onConnect callback to be set")
+	}
+
+	registry.AddConnection(context.Background(), ws, func(wasabi.Connection, wasabi.MessageType, []byte) {})
+
+	if !executed {
+		t.Error("Expected onConnect callback to be executed")
+	}
+}
