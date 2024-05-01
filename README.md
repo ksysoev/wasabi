@@ -63,7 +63,10 @@ func main() {
 
     // We create a new dispatcher with dispatch.NewPipeDispatcher. 
     // This dispatcher sends/routes each incoming WebSocket message to the backend.
-    dispatcher := dispatch.NewPipeDispatcher(backend)
+    dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+	})
+    
     dispatcher.Use(ErrHandler)
     dispatcher.Use(request.NewTrottlerMiddleware(10))
 
