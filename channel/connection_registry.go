@@ -100,8 +100,8 @@ func (r *ConnectionRegistry) handleClose() {
 			wg.Add(1)
 
 			go func() {
+				defer wg.Done()
 				r.onDisconnect(connection)
-				wg.Done()
 			}()
 		}
 	}
@@ -172,19 +172,19 @@ func WithInActivityTimeout(timeout time.Duration) ConnectionRegistryOption {
 	}
 }
 
-// WithOnConnect sets the connection hook function that will be called when a new connection is established.
+// WithOnConnectHook sets the connection hook function that will be called when a new connection is established.
 // The provided callback function `cb` will be invoked with the newly established connection as its argument.
 // This function returns a ConnectionRegistryOption that can be used to configure a ConnectionRegistry.
-func WithOnConnect(cb ConnectionHook) ConnectionRegistryOption {
+func WithOnConnectHook(cb ConnectionHook) ConnectionRegistryOption {
 	return func(r *ConnectionRegistry) {
 		r.onConnect = cb
 	}
 }
 
-// WithOnDisconnect sets the callback function to be executed when a connection is disconnected.
+// WithOnDisconnectHook sets the callback function to be executed when a connection is disconnected.
 // The provided callback function should have the signature `func(connectionID string)`.
 // It can be used to perform any necessary cleanup or logging operations when a connection is disconnected.
-func WithOnDisconnect(cb ConnectionHook) ConnectionRegistryOption {
+func WithOnDisconnectHook(cb ConnectionHook) ConnectionRegistryOption {
 	return func(r *ConnectionRegistry) {
 		r.onDisconnect = cb
 	}
