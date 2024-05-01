@@ -44,6 +44,36 @@ func TestConnectionRegistry_AddConnection(t *testing.T) {
 	}
 }
 
+func TestConnectionRegistry_AddConnection_ToClosedRegistry(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	registry.Close()
+
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	ctx := context.Background()
+
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
+
+	conn := registry.AddConnection(ctx, ws, cb)
+
+	if conn != nil {
+		t.Error("Expected connection to be nil")
+	}
+}
+
 func TestConnectionRegistry_GetConnection(t *testing.T) {
 	registry := NewConnectionRegistry()
 
