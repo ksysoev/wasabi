@@ -36,7 +36,9 @@ func main() {
 		return nil
 	})
 
-	dispatcher := dispatch.NewPipeDispatcher(backend)
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+	})
 	dispatcher.Use(ErrHandler)
 	dispatcher.Use(request.NewTrottlerMiddleware(100))
 

@@ -25,7 +25,9 @@ func main() {
 		return conn.Send(wasabi.MsgTypeText, req.Data())
 	})
 
-	dispatcher := dispatch.NewPipeDispatcher(backend)
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+	})
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
 	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
