@@ -181,7 +181,7 @@ func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 		executed = true
 	}
 
-	registry = NewConnectionRegistry(WithOnConnect(cb))
+	registry = NewConnectionRegistry(WithOnConnectHook(cb))
 
 	if registry.onConnect == nil {
 		t.Error("Expected onConnect callback to be set")
@@ -191,5 +191,55 @@ func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 
 	if !executed {
 		t.Error("Expected onConnect callback to be executed")
+	}
+}
+
+func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if registry.onDisconnect != nil {
+		t.Error("Expected onDisconnect hook to be nil")
+	}
+
+	done := make(chan struct{})
+	hook := func(conn wasabi.Connection) {
+		if conn == nil {
+			t.Error("Expected connection to be passed to onDisconnect hook")
+		}
+
+		done <- struct{}{}
+	}
+
+	registry = NewConnectionRegistry(WithOnDisconnectHook(hook))
+
+	if registry.onDisconnect == nil {
+		t.Error("Expected onDisconnect hook to be set")
+	}
+
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	ctx := context.Background()
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
+	conn := registry.AddConnection(ctx, ws, cb)
+
+	registry.onClose <- conn.ID()
+	close(registry.onClose)
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected onDisconnect hook to be executed")
 	}
 }

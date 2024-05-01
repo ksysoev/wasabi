@@ -100,8 +100,8 @@ func (r *ConnectionRegistry) handleClose() {
 			wg.Add(1)
 
 			go func() {
+				defer wg.Done()
 				r.onDisconnect(connection)
-				wg.Done()
 			}()
 		}
 	}
