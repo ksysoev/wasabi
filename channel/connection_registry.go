@@ -15,16 +15,20 @@ const (
 	inActivityTimeout            = 0 * time.Second
 )
 
+type ConnectionHook func(wasabi.Connection)
+
 // ConnectionRegistry is default implementation of ConnectionRegistry
 type ConnectionRegistry struct {
 	connections       map[string]wasabi.Connection
 	onClose           chan string
 	bufferPool        *bufferPool
+	onConnect         ConnectionHook
+	onDisconnect      ConnectionHook
 	concurrencyLimit  uint
-	mu                sync.RWMutex
 	frameSizeLimit    int64
-	isClosed          bool
 	inActivityTimeout time.Duration
+	mu                sync.RWMutex
+	isClosed          bool
 }
 
 type ConnectionRegistryOption func(*ConnectionRegistry)
@@ -67,6 +71,10 @@ func (r *ConnectionRegistry) AddConnection(
 
 	conn.ws.SetReadLimit(r.frameSizeLimit)
 
+	if r.onConnect != nil {
+		r.onConnect(conn)
+	}
+
 	return conn
 }
 
@@ -80,11 +88,25 @@ func (r *ConnectionRegistry) GetConnection(id string) wasabi.Connection {
 
 // handleClose handles connection cloasures and removes them from registry
 func (r *ConnectionRegistry) handleClose() {
+	wg := sync.WaitGroup{}
+
 	for id := range r.onClose {
 		r.mu.Lock()
+		connection := r.connections[id]
 		delete(r.connections, id)
 		r.mu.Unlock()
+
+		if r.onDisconnect != nil {
+			wg.Add(1)
+
+			go func() {
+				r.onDisconnect(connection)
+				wg.Done()
+			}()
+		}
 	}
+
+	wg.Wait()
 }
 
 // Shutdown closes all connections in the ConnectionRegistry.
@@ -147,5 +169,23 @@ func WithConcurrencyLimit(limit uint) ConnectionRegistryOption {
 func WithInActivityTimeout(timeout time.Duration) ConnectionRegistryOption {
 	return func(r *ConnectionRegistry) {
 		r.inActivityTimeout = timeout
+	}
+}
+
+// WithOnConnect sets the connection hook function that will be called when a new connection is established.
+// The provided callback function `cb` will be invoked with the newly established connection as its argument.
+// This function returns a ConnectionRegistryOption that can be used to configure a ConnectionRegistry.
+func WithOnConnect(cb ConnectionHook) ConnectionRegistryOption {
+	return func(r *ConnectionRegistry) {
+		r.onConnect = cb
+	}
+}
+
+// WithOnDisconnect sets the callback function to be executed when a connection is disconnected.
+// The provided callback function should have the signature `func(connectionID string)`.
+// It can be used to perform any necessary cleanup or logging operations when a connection is disconnected.
+func WithOnDisconnect(cb ConnectionHook) ConnectionRegistryOption {
+	return func(r *ConnectionRegistry) {
+		r.onDisconnect = cb
 	}
 }
