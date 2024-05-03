@@ -22,9 +22,7 @@ func main() {
 
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := &backend.WSBackend{
-		URL: "wss://ws.derivws.com/websockets/v3?app_id=1089",
-	}
+	backend := backend.NewWSBackend("wss://ws.derivws.com/websockets/v3?app_id=1089")
 
 	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)
