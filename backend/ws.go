@@ -55,9 +55,9 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 
 	b.lock.Lock()
 	b.connections[conn.ID()] = c
+	b.lock.Unlock()
 
 	go b.responseHandler(c, conn)
-	b.lock.Unlock()
 
 	return c, nil
 }
@@ -68,9 +68,10 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 	defer func() {
 		b.lock.Lock()
 		delete(b.connections, client.ID())
+		b.lock.Unlock()
+
 		server.Close(websocket.StatusNormalClosure, "")
 		client.Close(websocket.StatusNormalClosure, "")
-		b.lock.Unlock()
 	}()
 
 	buffer := bytes.NewBuffer(make([]byte, 0))
