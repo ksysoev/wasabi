@@ -14,6 +14,7 @@ type WSBackend struct {
 	lock        *sync.RWMutex
 }
 
+// NewWSBackend creates a new instance of WSBackend with the specified URL.
 func NewWSBackend(url string) *WSBackend {
 	return &WSBackend{
 		URL:         url,
@@ -22,6 +23,9 @@ func NewWSBackend(url string) *WSBackend {
 	}
 }
 
+// Handle handles the incoming request from the WebSocket connection.
+// It writes the request data to the WebSocket connection's context.
+// The function returns an error if there is any issue with the connection or writing the data.
 func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	c, err := b.getConnection(conn)
 
@@ -32,6 +36,9 @@ func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	return c.Write(r.Context(), websocket.MessageText, r.Data())
 }
 
+// getConnection returns the websocket connection associated with the given connection.
+// If the connection is already established, it returns the existing connection.
+// Otherwise, it establishes a new connection and returns it.
 func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, error) {
 	b.lock.RLock()
 	c, ok := b.connections[conn.ID()]
@@ -49,34 +56,42 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 	b.lock.Lock()
 	b.connections[conn.ID()] = c
 
-	go func() {
-		defer func() {
-			b.lock.Lock()
-			delete(b.connections, conn.ID())
-			conn.Close(websocket.StatusNormalClosure, "")
-			b.lock.Unlock()
-		}()
-		buffer := bytes.NewBuffer(make([]byte, 0))
-		for {
-			buffer.Reset()
-			msgType, reader, err := c.Reader(conn.Context())
-			if err != nil {
-				return
-			}
-
-			_, err = buffer.ReadFrom(reader)
-
-			if err != nil {
-				return
-			}
-
-			err = conn.Send(msgType, buffer.Bytes())
-			if err != nil {
-				return
-			}
-		}
-	}()
+	go b.responseHandler(c, conn)
 	b.lock.Unlock()
 
 	return c, nil
+}
+
+// responseHandler handles the response from the server to the client.
+// It reads messages from the server, sends them to the client, and manages the connection lifecycle.
+func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connection) {
+	defer func() {
+		b.lock.Lock()
+		delete(b.connections, client.ID())
+		server.Close(websocket.StatusNormalClosure, "")
+		client.Close(websocket.StatusNormalClosure, "")
+		b.lock.Unlock()
+	}()
+
+	buffer := bytes.NewBuffer(make([]byte, 0))
+	ctx := client.Context()
+
+	for ctx.Err() == nil {
+		buffer.Reset()
+		msgType, reader, err := server.Reader(ctx)
+		if err != nil {
+			return
+		}
+
+		_, err = buffer.ReadFrom(reader)
+
+		if err != nil {
+			return
+		}
+
+		err = client.Send(msgType, buffer.Bytes())
+		if err != nil {
+			return
+		}
+	}
 }
