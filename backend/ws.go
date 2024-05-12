@@ -33,6 +33,7 @@ func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 		return err
 	}
 
+	// TODO: find a way to pass correct message type
 	return c.Write(r.Context(), websocket.MessageText, r.Data())
 }
 
@@ -70,6 +71,7 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 		delete(b.connections, client.ID())
 		b.lock.Unlock()
 
+		// TODO: implement propogation of status code if connection was cloased by server
 		server.Close(websocket.StatusNormalClosure, "")
 		client.Close(websocket.StatusNormalClosure, "")
 	}()
