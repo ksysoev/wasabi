@@ -9,17 +9,17 @@ import (
 )
 
 type WSBackend struct {
-	URL         string
 	connections map[string]*websocket.Conn
 	lock        *sync.RWMutex
+	URL         string
 }
 
 // NewWSBackend creates a new instance of WSBackend with the specified URL.
 func NewWSBackend(url string) *WSBackend {
 	return &WSBackend{
-		URL:         url,
 		connections: make(map[string]*websocket.Conn),
 		lock:        &sync.RWMutex{},
+		URL:         url,
 	}
 }
 
@@ -49,9 +49,13 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 		return c, nil
 	}
 
-	c, _, err := websocket.Dial(conn.Context(), b.URL, nil)
+	c, resp, err := websocket.Dial(conn.Context(), b.URL, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
 	}
 
 	b.lock.Lock()
@@ -71,7 +75,7 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 		delete(b.connections, client.ID())
 		b.lock.Unlock()
 
-		// TODO: implement propogation of status code if connection was cloased by server
+		// TODO: implement propagation of status code if connection was cloased by server
 		server.Close(websocket.StatusNormalClosure, "")
 		client.Close(websocket.StatusNormalClosure, "")
 	}()
@@ -81,6 +85,7 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 
 	for ctx.Err() == nil {
 		buffer.Reset()
+
 		msgType, reader, err := server.Reader(ctx)
 		if err != nil {
 			return

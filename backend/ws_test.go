@@ -134,6 +134,7 @@ func TestGetConnectionDialError(t *testing.T) {
 func TestWSBackend_Handle(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	url := "ws://" + server.Listener.Addr().String()
+
 	defer server.Close()
 
 	conn := mocks.NewMockConnection(t)
