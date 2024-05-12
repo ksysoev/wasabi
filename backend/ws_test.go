@@ -161,3 +161,64 @@ func TestWSBackend_Handle(t *testing.T) {
 
 	<-waitForSend
 }
+
+func TestWSBackend_Handle_FailToConnect(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	url := "ws://" + server.Listener.Addr().String()
+	server.Close()
+
+	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().ID().Return("connection1")
+	conn.EXPECT().Context().Return(context.Background())
+
+	r := mocks.NewMockRequest(t)
+
+	b := NewWSBackend(url)
+
+	err := b.Handle(conn, r)
+
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+}
+
+func TestWSBackend_Handle_CloseConnection(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	url := "ws://" + server.Listener.Addr().String()
+
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().ID().Return("connection1")
+	conn.EXPECT().Context().Return(ctx)
+
+	conn.EXPECT().Close(websocket.StatusNormalClosure, "").Return(nil)
+
+	b := NewWSBackend(url)
+
+	wsConn, resp, err := websocket.Dial(ctx, url, nil)
+	if err != nil {
+		t.Fatalf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	done := make(chan struct{})
+
+	go func() {
+		b.responseHandler(wsConn, conn)
+		close(done)
+	}()
+
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be closed")
+	}
+}

@@ -54,7 +54,7 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 		return nil, err
 	}
 
-	if resp != nil && resp.Body != nil {
+	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
 
