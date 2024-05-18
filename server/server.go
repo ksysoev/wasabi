@@ -25,6 +25,7 @@ type Server struct {
 	handler  *http.Server
 	addr     string
 	channels []wasabi.Channel
+	listener net.Listener
 }
 
 type Option func(*Server)
@@ -33,6 +34,10 @@ type Option func(*Server)
 // port - port to listen on
 // returns new instance of Server
 func NewServer(addr string, opts ...Option) *Server {
+	if addr == "" {
+		addr = ":http"
+	}
+
 	server := &Server{
 		addr:     addr,
 		channels: make([]wasabi.Channel, 0, 1),
@@ -64,7 +69,7 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 // Run starts the server
 // returns error if server is already running
 // or if server fails to start
-func (s *Server) Run() error {
+func (s *Server) Run() (err error) {
 	if !s.mutex.TryLock() {
 		return ErrServerAlreadyRunning
 	}
@@ -82,9 +87,14 @@ func (s *Server) Run() error {
 
 	s.handler.Handler = mux
 
-	slog.Info("Starting app server on " + s.addr)
+	s.listener, err = net.Listen("tcp", s.addr)
+	if err != nil {
+		return err
+	}
 
-	err := s.handler.ListenAndServe()
+	slog.Info("Starting app server on " + s.listener.Addr().String())
+
+	err = s.handler.Serve(s.listener)
 
 	if err != nil && err != http.ErrServerClosed {
 		return err
@@ -130,6 +140,16 @@ func (s *Server) Close(ctx ...context.Context) error {
 	wg.Wait()
 
 	return <-done
+}
+
+// Addr returns the server's network address.
+// If the server is not running, it returns nil.
+func (s *Server) Addr() net.Addr {
+	if s.listener == nil {
+		return nil
+	}
+
+	return s.listener.Addr()
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.
