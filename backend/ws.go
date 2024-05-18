@@ -2,6 +2,8 @@ package backend
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
@@ -79,14 +81,28 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 // responseHandler handles the response from the server to the client.
 // It reads messages from the server, sends them to the client, and manages the connection lifecycle.
 func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connection) {
+	var (
+		err     error
+		msgType websocket.MessageType
+		reader  io.Reader
+	)
+
 	defer func() {
+		code := websocket.StatusNormalClosure
+		reason := "connection closed"
+
+		var wsCloseErr websocket.CloseError
+		if errors.As(err, &wsCloseErr) {
+			code = wsCloseErr.Code
+			reason = wsCloseErr.Reason
+		}
+
 		b.lock.Lock()
 		delete(b.connections, client.ID())
 		b.lock.Unlock()
 
-		// TODO: implement propagation of status code if connection was cloased by server
-		server.Close(websocket.StatusNormalClosure, "")
-		client.Close(websocket.StatusNormalClosure, "")
+		server.Close(code, reason)
+		client.Close(code, reason)
 	}()
 
 	buffer := bytes.NewBuffer(make([]byte, 0))
@@ -95,7 +111,7 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 	for ctx.Err() == nil {
 		buffer.Reset()
 
-		msgType, reader, err := server.Reader(ctx)
+		msgType, reader, err = server.Reader(ctx)
 		if err != nil {
 			return
 		}
@@ -111,4 +127,6 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 			return
 		}
 	}
+
+	err = ctx.Err()
 }
