@@ -11,14 +11,18 @@ import (
 type WSBackend struct {
 	connections map[string]*websocket.Conn
 	lock        *sync.RWMutex
+	factory     WSRequestFactory
 	URL         string
 }
 
+type WSRequestFactory func(r wasabi.Request) (websocket.MessageType, []byte, error)
+
 // NewWSBackend creates a new instance of WSBackend with the specified URL.
-func NewWSBackend(url string) *WSBackend {
+func NewWSBackend(url string, factory WSRequestFactory) *WSBackend {
 	return &WSBackend{
 		connections: make(map[string]*websocket.Conn),
 		lock:        &sync.RWMutex{},
+		factory:     factory,
 		URL:         url,
 	}
 }
@@ -33,8 +37,13 @@ func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 		return err
 	}
 
-	// TODO: find a way to pass correct message type
-	return c.Write(r.Context(), websocket.MessageText, r.Data())
+	msgType, data, err := b.factory(r)
+
+	if err != nil {
+		return err
+	}
+
+	return c.Write(r.Context(), msgType, data)
 }
 
 // getConnection returns the websocket connection associated with the given connection.
