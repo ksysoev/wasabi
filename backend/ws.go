@@ -3,14 +3,17 @@ package backend
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
+	"golang.org/x/sync/singleflight"
 	"nhooyr.io/websocket"
 )
 
 type WSBackend struct {
+	group       *singleflight.Group
 	connections map[string]*websocket.Conn
 	lock        *sync.RWMutex
 	factory     WSRequestFactory
@@ -22,6 +25,7 @@ type WSRequestFactory func(r wasabi.Request) (websocket.MessageType, []byte, err
 // NewWSBackend creates a new instance of WSBackend with the specified URL.
 func NewWSBackend(url string, factory WSRequestFactory) *WSBackend {
 	return &WSBackend{
+		group:       &singleflight.Group{},
 		connections: make(map[string]*websocket.Conn),
 		lock:        &sync.RWMutex{},
 		factory:     factory,
@@ -53,29 +57,43 @@ func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // Otherwise, it establishes a new connection and returns it.
 func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, error) {
 	b.lock.RLock()
-	c, ok := b.connections[conn.ID()]
+	ws, ok := b.connections[conn.ID()]
 	b.lock.RUnlock()
 
 	if ok {
-		return c, nil
+		return ws, nil
 	}
 
-	c, resp, err := websocket.Dial(conn.Context(), b.URL, nil)
+	uws, err, _ := b.group.Do(conn.ID(), func() (interface{}, error) {
+		fmt.Println("Connecting to", b.URL, "for connection", conn.ID())
+		c, resp, err := websocket.Dial(conn.Context(), b.URL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.Body != nil {
+			defer resp.Body.Close()
+		}
+
+		go b.responseHandler(c, conn)
+
+		b.lock.Lock()
+		b.connections[conn.ID()] = c
+		b.lock.Unlock()
+
+		return c, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.Body != nil {
-		defer resp.Body.Close()
+	ws, ok = uws.(*websocket.Conn)
+	if !ok {
+		panic("unexpected type")
 	}
 
-	b.lock.Lock()
-	b.connections[conn.ID()] = c
-	b.lock.Unlock()
-
-	go b.responseHandler(c, conn)
-
-	return c, nil
+	return ws, nil
 }
 
 // responseHandler handles the response from the server to the client.
