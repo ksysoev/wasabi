@@ -22,7 +22,20 @@ func main() {
 
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := backend.NewWSBackend("wss://ws.derivws.com/websockets/v3?app_id=1089")
+	backend := backend.NewWSBackend(
+		"wss://ws.derivws.com/websockets/v3?app_id=1089",
+		func(r wasabi.Request) (wasabi.MessageType, []byte, error) {
+			switch r.RoutingKey() {
+			case "text":
+				return wasabi.MsgTypeText, r.Data(), nil
+			case "binary":
+				return wasabi.MsgTypeBinary, r.Data(), nil
+			default:
+				var t wasabi.MessageType
+				return t, nil, fmt.Errorf("unsupported request type: %s", r.RoutingKey())
+			}
+		},
+	)
 
 	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)

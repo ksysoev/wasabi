@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"nhooyr.io/websocket"
 )
@@ -47,7 +48,9 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 
 func TestNewWSBackend(t *testing.T) {
 	url := "ws://example.com"
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	if b.URL != url {
 		t.Errorf("Expected URL to be %q, but got %q", url, b.URL)
@@ -67,7 +70,9 @@ func TestGetConnectionExistingConnection(t *testing.T) {
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
@@ -90,7 +95,9 @@ func TestGetConnectionNewConnection(t *testing.T) {
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
@@ -115,7 +122,9 @@ func TestGetConnectionDialError(t *testing.T) {
 	url := "ws://" + server.Listener.Addr().String()
 	server.Close()
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
@@ -151,7 +160,9 @@ func TestWSBackend_Handle(t *testing.T) {
 	r.EXPECT().Data().Return([]byte("Hello, world!"))
 	r.EXPECT().Context().Return(context.Background())
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, r.Data(), nil
+	})
 
 	err := b.Handle(conn, r)
 
@@ -173,7 +184,9 @@ func TestWSBackend_Handle_FailToConnect(t *testing.T) {
 
 	r := mocks.NewMockRequest(t)
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	err := b.Handle(conn, r)
 
@@ -196,7 +209,9 @@ func TestWSBackend_Handle_CloseConnection(t *testing.T) {
 
 	conn.EXPECT().Close(websocket.StatusNormalClosure, "").Return(nil)
 
-	b := NewWSBackend(url)
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	})
 
 	wsConn, resp, err := websocket.Dial(ctx, url, nil)
 	if err != nil {
@@ -220,5 +235,28 @@ func TestWSBackend_Handle_CloseConnection(t *testing.T) {
 	case <-done:
 	case <-time.After(1 * time.Second):
 		t.Error("Expected connection to be closed")
+	}
+}
+
+func TestWSBackend_RequestFactory_Error(t *testing.T) {
+	server := httptest.NewServer(wsHandlerEcho)
+	url := "ws://" + server.Listener.Addr().String()
+
+	defer server.Close()
+
+	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().ID().Return("connection1")
+	conn.EXPECT().Context().Return(context.Background())
+
+	r := mocks.NewMockRequest(t)
+
+	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+		return 0, nil, io.EOF
+	})
+
+	err := b.Handle(conn, r)
+
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
 	}
 }
