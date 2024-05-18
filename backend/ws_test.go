@@ -207,7 +207,7 @@ func TestWSBackend_Handle_CloseConnection(t *testing.T) {
 	conn.EXPECT().ID().Return("connection1")
 	conn.EXPECT().Context().Return(ctx)
 
-	conn.EXPECT().Close(websocket.StatusNormalClosure, "").Return(nil)
+	conn.EXPECT().Close(websocket.StatusNormalClosure, "connection closed").Return(nil)
 
 	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
