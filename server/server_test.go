@@ -26,6 +26,12 @@ func TestNewServer(t *testing.T) {
 	if server.mutex == nil {
 		t.Error("Expected non-nil mutex")
 	}
+
+	server = NewServer("")
+
+	if server.addr != ":http" {
+		t.Errorf("Expected default port :http, but got %s", server.addr)
+	}
 }
 func TestServer_AddChannel(t *testing.T) {
 	// Create a new Server instance
@@ -231,6 +237,10 @@ func TestServer_Addr(t *testing.T) {
 	channel.EXPECT().Close().Return(nil)
 
 	server.AddChannel(channel)
+
+	if server.Addr() != nil {
+		t.Error("Expected nil address for server that is not running")
+	}
 
 	// Start the server in a separate goroutine
 	done := make(chan struct{})
