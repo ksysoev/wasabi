@@ -20,11 +20,13 @@ const (
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
-	baseCtx  context.Context
-	mutex    *sync.Mutex
-	handler  *http.Server
-	addr     string
-	channels []wasabi.Channel
+	baseCtx      context.Context
+	listener     net.Listener
+	listenerLock *sync.Mutex
+	mutex        *sync.Mutex
+	handler      *http.Server
+	addr         string
+	channels     []wasabi.Channel
 }
 
 type Option func(*Server)
@@ -33,11 +35,16 @@ type Option func(*Server)
 // port - port to listen on
 // returns new instance of Server
 func NewServer(addr string, opts ...Option) *Server {
+	if addr == "" {
+		addr = ":http"
+	}
+
 	server := &Server{
-		addr:     addr,
-		channels: make([]wasabi.Channel, 0, 1),
-		mutex:    &sync.Mutex{},
-		baseCtx:  context.Background(),
+		addr:         addr,
+		channels:     make([]wasabi.Channel, 0, 1),
+		mutex:        &sync.Mutex{},
+		listenerLock: &sync.Mutex{},
+		baseCtx:      context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -64,7 +71,7 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 // Run starts the server
 // returns error if server is already running
 // or if server fails to start
-func (s *Server) Run() error {
+func (s *Server) Run() (err error) {
 	if !s.mutex.TryLock() {
 		return ErrServerAlreadyRunning
 	}
@@ -82,9 +89,17 @@ func (s *Server) Run() error {
 
 	s.handler.Handler = mux
 
-	slog.Info("Starting app server on " + s.addr)
+	s.listenerLock.Lock()
+	s.listener, err = net.Listen("tcp", s.addr)
+	s.listenerLock.Unlock()
 
-	err := s.handler.ListenAndServe()
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Starting app server on " + s.listener.Addr().String())
+
+	err = s.handler.Serve(s.listener)
 
 	if err != nil && err != http.ErrServerClosed {
 		return err
@@ -130,6 +145,19 @@ func (s *Server) Close(ctx ...context.Context) error {
 	wg.Wait()
 
 	return <-done
+}
+
+// Addr returns the server's network address.
+// If the server is not running, it returns nil.
+func (s *Server) Addr() net.Addr {
+	s.listenerLock.Lock()
+	defer s.listenerLock.Unlock()
+
+	if s.listener == nil {
+		return nil
+	}
+
+	return s.listener.Addr()
 }
 
 // BaseContext optionally specifies based context that will be used for all connections.
