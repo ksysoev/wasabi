@@ -20,12 +20,13 @@ const (
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
-	baseCtx  context.Context
-	listener net.Listener
-	mutex    *sync.Mutex
-	handler  *http.Server
-	addr     string
-	channels []wasabi.Channel
+	baseCtx      context.Context
+	listener     net.Listener
+	listenerLock *sync.Mutex
+	mutex        *sync.Mutex
+	handler      *http.Server
+	addr         string
+	channels     []wasabi.Channel
 }
 
 type Option func(*Server)
@@ -39,10 +40,11 @@ func NewServer(addr string, opts ...Option) *Server {
 	}
 
 	server := &Server{
-		addr:     addr,
-		channels: make([]wasabi.Channel, 0, 1),
-		mutex:    &sync.Mutex{},
-		baseCtx:  context.Background(),
+		addr:         addr,
+		channels:     make([]wasabi.Channel, 0, 1),
+		mutex:        &sync.Mutex{},
+		listenerLock: &sync.Mutex{},
+		baseCtx:      context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -87,7 +89,10 @@ func (s *Server) Run() (err error) {
 
 	s.handler.Handler = mux
 
+	s.listenerLock.Lock()
 	s.listener, err = net.Listen("tcp", s.addr)
+	s.listenerLock.Unlock()
+
 	if err != nil {
 		return err
 	}
@@ -145,6 +150,9 @@ func (s *Server) Close(ctx ...context.Context) error {
 // Addr returns the server's network address.
 // If the server is not running, it returns nil.
 func (s *Server) Addr() net.Addr {
+	s.listenerLock.Lock()
+	defer s.listenerLock.Unlock()
+
 	if s.listener == nil {
 		return nil
 	}
