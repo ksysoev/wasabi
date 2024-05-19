@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -256,7 +255,8 @@ func TestServer_Addr(t *testing.T) {
 		t.Error("Expected server to start")
 	}
 
-	fmt.Println(server.listener)
+	// Wait for the server to fully start
+	time.Sleep(1 * time.Millisecond)
 
 	addr := server.Addr()
 

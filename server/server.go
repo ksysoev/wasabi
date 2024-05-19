@@ -21,11 +21,11 @@ var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
 	baseCtx  context.Context
+	listener net.Listener
 	mutex    *sync.Mutex
 	handler  *http.Server
 	addr     string
 	channels []wasabi.Channel
-	listener net.Listener
 }
 
 type Option func(*Server)
