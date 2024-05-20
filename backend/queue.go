@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"strconv"
 	"sync"
 
@@ -11,6 +12,11 @@ import (
 type response struct {
 	data    []byte
 	msgType websocket.MessageType
+}
+
+type request struct {
+	respChan chan response
+	ctx      context.Context
 }
 
 // OnRequestCallback is a function type that represents a callback function
@@ -25,7 +31,7 @@ type OnRequestCallback func(conn wasabi.Connection, req wasabi.Request, id strin
 
 // QueueBackend represents a backend for handling requests in a queue.
 type QueueBackend struct {
-	requests  map[string]chan response
+	requests  map[string]request
 	onRequest OnRequestCallback
 	lock      *sync.Mutex
 	lastReqID int
@@ -36,7 +42,7 @@ type QueueBackend struct {
 // The onRequest callback function is called when a new request is received  and ready to be passed to queue.
 func NewQueueBackend(onRequest OnRequestCallback) *QueueBackend {
 	return &QueueBackend{
-		requests:  make(map[string]chan response),
+		requests:  make(map[string]request),
 		onRequest: onRequest,
 		lock:      &sync.Mutex{},
 		lastReqID: 1,
@@ -52,7 +58,7 @@ func (b *QueueBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	b.lock.Lock()
 	b.lastReqID++
 	id := strconv.Itoa(b.lastReqID)
-	b.requests[id] = respChan
+	b.requests[id] = request{respChan, r.Context()}
 	b.lock.Unlock()
 
 	defer func() {
@@ -81,17 +87,17 @@ func (b *QueueBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // to the channel. If nobody is awaiting for response, it discards the response.
 func (b *QueueBackend) OnResponse(id string, msgType websocket.MessageType, data []byte) {
 	b.lock.Lock()
-	respChan, ok := b.requests[id]
+	request, ok := b.requests[id]
 	b.lock.Unlock()
 
 	if !ok {
 		return
 	}
 
-	defer close(respChan)
+	defer close(request.respChan)
 
 	select {
-	case respChan <- response{data, msgType}:
-	default:
+	case request.respChan <- response{data, msgType}:
+	case <-request.ctx.Done():
 	}
 }
