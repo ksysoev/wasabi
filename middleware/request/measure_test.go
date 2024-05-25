@@ -11,9 +11,12 @@ import (
 
 func TestNewMeasurer(t *testing.T) {
 	// Define a mock saveMetric function
-	var savedMetric wasabi.Request
-	var savedError error
-	var savedDuration time.Duration
+	var (
+		savedMetric   wasabi.Request
+		savedError    error
+		savedDuration time.Duration
+	)
+
 	saveMetric := func(req wasabi.Request, err error, duration time.Duration) {
 		savedMetric = req
 		savedError = err
