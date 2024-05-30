@@ -71,7 +71,12 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 // Run starts the server
 // returns error if server is already running
 // or if server fails to start
-func (s *Server) Run() (err error) {
+// done is optional and can be used to signify that the server is ready for
+// usage by closing it.
+func (s *Server) Run(done ...chan<- struct{}) (err error) {
+	if len(done) > 1 {
+		panic("only one channel can be supplied!")
+	}
 	if !s.mutex.TryLock() {
 		return ErrServerAlreadyRunning
 	}
@@ -99,6 +104,9 @@ func (s *Server) Run() (err error) {
 
 	slog.Info("Starting app server on " + s.listener.Addr().String())
 
+	if len(done) == 1 {
+		close(done[0])
+	}
 	err = s.handler.Serve(s.listener)
 
 	if err != nil && err != http.ErrServerClosed {

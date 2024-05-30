@@ -244,29 +244,15 @@ func TestServer_Addr(t *testing.T) {
 
 	// Start the server in a separate goroutine
 	done := make(chan struct{})
-
-	// Run the server
-	for i := 0; i < 2; i++ {
-		go func() {
-			err := server.Run()
-			switch err {
-			case nil:
-			case ErrServerAlreadyRunning:
-				close(done)
-			default:
-				t.Errorf("Got unexpected error: %v", err)
-			}
-		}()
-	}
-
-	select {
-	case <-done:
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to start")
-	}
+	go func() {
+		err := server.Run(done)
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+	}()
 
 	// Wait for the server to fully start
-	time.Sleep(1 * time.Millisecond)
+	<-done
 
 	addr := server.Addr()
 
