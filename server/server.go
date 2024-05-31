@@ -25,9 +25,9 @@ type Server struct {
 	listenerLock *sync.Mutex
 	mutex        *sync.Mutex
 	handler      *http.Server
+	ready        chan<- struct{}
 	addr         string
 	channels     []wasabi.Channel
-	ready        chan<- struct{}
 }
 
 type Option func(*Server)

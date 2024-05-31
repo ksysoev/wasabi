@@ -229,6 +229,7 @@ func TestServer_Addr(t *testing.T) {
 	// Create a new Server instance
 	done := make(chan struct{})
 	server := NewServer(":0", WithReadinessChan(done))
+
 	defer server.Close()
 
 	// Create a mock channel
