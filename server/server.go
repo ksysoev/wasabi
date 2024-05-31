@@ -27,9 +27,19 @@ type Server struct {
 	handler      *http.Server
 	addr         string
 	channels     []wasabi.Channel
+	ready        chan<- struct{}
 }
 
 type Option func(*Server)
+
+// WithReadinessChan sets ch to [Server] and will be closed once the [Server] is
+// ready to accept connection. Typically used in testing after calling [Run]
+// method and waiting for ch to close, before continuing with test logics.
+func WithReadinessChan(ch chan<- struct{}) Option {
+	return func(s *Server) {
+		s.ready = ch
+	}
+}
 
 // NewServer creates new instance of Wasabi server
 // port - port to listen on
@@ -98,6 +108,11 @@ func (s *Server) Run() (err error) {
 	}
 
 	slog.Info("Starting app server on " + s.listener.Addr().String())
+
+	// Signals that server can accept connections
+	if s.ready != nil {
+		close(s.ready)
+	}
 
 	err = s.handler.Serve(s.listener)
 

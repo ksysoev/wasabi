@@ -227,7 +227,8 @@ func TestServer_Close_NoContext(t *testing.T) {
 
 func TestServer_Addr(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(":0")
+	done := make(chan struct{})
+	server := NewServer(":0", WithReadinessChan(done))
 	defer server.Close()
 
 	// Create a mock channel
@@ -243,30 +244,15 @@ func TestServer_Addr(t *testing.T) {
 	}
 
 	// Start the server in a separate goroutine
-	done := make(chan struct{})
-
-	// Run the server
-	for i := 0; i < 2; i++ {
-		go func() {
-			err := server.Run()
-			switch err {
-			case nil:
-			case ErrServerAlreadyRunning:
-				close(done)
-			default:
-				t.Errorf("Got unexpected error: %v", err)
-			}
-		}()
-	}
-
-	select {
-	case <-done:
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to start")
-	}
+	go func() {
+		err := server.Run()
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+	}()
 
 	// Wait for the server to fully start
-	time.Sleep(1 * time.Millisecond)
+	<-done
 
 	addr := server.Addr()
 
