@@ -56,7 +56,7 @@ go install golang.org/x/tools/go/analysis/passes/fieldalignment/cmd/fieldalignme
 
 At this point, you're ready to make your changes! Feel free to ask for help; everyone is a beginner at first.
 
-# Make a Pull Request
+## Make a Pull Request
 
 At this point, you should switch back to your master branch and make sure it's up to date with Wasabi's master branch:
 

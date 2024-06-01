@@ -100,7 +100,7 @@ func main() {
 
 Contributions to Wasabi are welcome! Please submit a pull request or create an issue to contribute.
 
-For an easy start please read [the contributor's guidelines](./CONTRIBUTING.md)
+For an easy start please read [the contributor's guidelines](./CONTRIBUTING.md).
 
 # License
 
