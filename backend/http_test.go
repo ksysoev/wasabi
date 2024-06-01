@@ -106,3 +106,20 @@ func TestHTTPBackend_Handle_TimeoutRequestByContext(t *testing.T) {
 		t.Errorf("Expected error to be %v, but got %v", context.DeadlineExceeded, err)
 	}
 }
+func TestWithMaxRequestsPerHost(t *testing.T) {
+	maxReqPerHost := 100
+
+	backend := NewBackend(nil, WithMaxRequestsPerHost(maxReqPerHost))
+
+	if backend.client.Transport.(*http.Transport).MaxConnsPerHost != maxReqPerHost {
+		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", maxReqPerHost, backend.client.Transport.(*http.Transport).MaxConnsPerHost)
+	}
+}
+
+func TestWithMaxRequestsPerHost_DefaultValue(t *testing.T) {
+	backend := NewBackend(nil)
+
+	if backend.client.Transport.(*http.Transport).MaxConnsPerHost != defaultMaxReqPerHost {
+		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", defaultMaxReqPerHost, backend.client.Transport.(*http.Transport).MaxConnsPerHost)
+	}
+}

@@ -11,7 +11,6 @@ import (
 	"github.com/ksysoev/wasabi/backend"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
-	"github.com/ksysoev/wasabi/middleware/request"
 	"github.com/ksysoev/wasabi/server"
 )
 
@@ -31,16 +30,9 @@ func main() {
 		return httpReq, nil
 	})
 
-	ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
-		conn.Send(wasabi.MsgTypeText, []byte("Failed to process request: "+err.Error()))
-		return nil
-	})
-
 	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)
 	})
-	dispatcher.Use(ErrHandler)
-	dispatcher.Use(request.NewTrottlerMiddleware(100))
 
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
