@@ -43,16 +43,6 @@ func TestConnectionWrapper_Context(t *testing.T) {
 	assert.Equal(t, expectedContext, actualContext)
 }
 
-func TestConnectionWrapper_HandleRequests(t *testing.T) {
-	mockConnection := mocks.NewMockConnection(t)
-	wrapper := NewConnectionWrapper(mockConnection)
-
-	mockConnection.On("HandleRequests").Once()
-
-	wrapper.HandleRequests()
-
-	mockConnection.AssertExpectations(t)
-}
 func TestConnectionWrapper_Send_WithOnSendWrapper(t *testing.T) {
 	mockConnection := mocks.NewMockConnection(t)
 	wrapper := NewConnectionWrapper(mockConnection)

@@ -91,8 +91,8 @@ func (c *Conn) Context() context.Context {
 	return c.ctx
 }
 
-// HandleRequests handles incoming messages
-func (c *Conn) HandleRequests() {
+// handleRequests handles incoming messages
+func (c *Conn) handleRequests() {
 	defer c.close()
 
 	for c.ctx.Err() == nil {

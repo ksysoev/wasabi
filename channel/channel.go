@@ -80,9 +80,7 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 			return
 		}
 
-		if conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch); conn != nil {
-			conn.HandleRequests()
-		}
+		c.connRegistry.HandleConnection(ctx, ws, c.disptacher.Dispatch)
 	})
 }
 

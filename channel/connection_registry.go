@@ -58,21 +58,22 @@ func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry
 }
 
 // AddConnection adds new Websocket connection to registry
-func (r *ConnectionRegistry) AddConnection(
+func (r *ConnectionRegistry) HandleConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
 	cb wasabi.OnMessage,
-) wasabi.Connection {
+) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if r.connectionLimit > 0 && len(r.connections) >= r.connectionLimit {
 		ws.Close(websocket.StatusTryAgainLater, "Connection limit reached")
-		return nil
+		return
 	}
 
 	if r.isClosed {
-		return nil
+		ws.Close(websocket.StatusServiceRestart, "Server is shutting down")
+		return
 	}
 
 	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit, r.inActivityTimeout)
@@ -84,7 +85,7 @@ func (r *ConnectionRegistry) AddConnection(
 		r.onConnect(conn)
 	}
 
-	return conn
+	conn.handleRequests()
 }
 
 // CanAccept checks if the connection registry can accept new connections.

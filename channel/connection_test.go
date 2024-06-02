@@ -65,7 +65,7 @@ func TestConn_Context(t *testing.T) {
 	}
 }
 
-func TestConn_HandleRequests(t *testing.T) {
+func TestConn_handleRequests(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 
@@ -91,7 +91,7 @@ func TestConn_HandleRequests(t *testing.T) {
 
 	conn.onMessageCB = func(c wasabi.Connection, msgType wasabi.MessageType, data []byte) { received <- struct{}{} }
 
-	go conn.HandleRequests()
+	go conn.handleRequests()
 
 	// Send message to trigger OnMessage callback
 	err = ws.Write(context.Background(), websocket.MessageText, []byte("test message"))
