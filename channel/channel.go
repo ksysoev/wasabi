@@ -67,6 +67,11 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		if !c.connRegistry.CanAccept() {
+			http.Error(w, "Connection limit reached", http.StatusServiceUnavailable)
+			return
+		}
+
 		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			OriginPatterns: c.config.originPatterns,
 		})
@@ -75,8 +80,9 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 			return
 		}
 
-		conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch)
-		conn.HandleRequests()
+		if conn := c.connRegistry.AddConnection(ctx, ws, c.disptacher.Dispatch); conn != nil {
+			conn.HandleRequests()
+		}
 	})
 }
 

@@ -3,6 +3,7 @@ package channel
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/ksysoev/wasabi/mocks"
@@ -144,5 +145,62 @@ func TestChannel_Shutdown(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
+	}
+}
+func TestChannel_wsConnectionHandler_CannotAcceptNewConnection(t *testing.T) {
+	path := "/test/path"
+	dispatcher := mocks.NewMockDispatcher(t)
+	connRegistry := mocks.NewMockConnectionRegistry(t)
+	connRegistry.EXPECT().CanAccept().Return(false)
+
+	channel := NewChannel(path, dispatcher, connRegistry)
+
+	// Create a mock request
+	mockRequest := httptest.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
+
+	// Create a mock response writer
+	mockResponseWriter := httptest.NewRecorder()
+
+	// Call the wsConnectionHandler method
+	handler := channel.wsConnectionHandler()
+
+	// Serve the mock request
+	handler.ServeHTTP(mockResponseWriter, mockRequest)
+
+	res := mockResponseWriter.Result()
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("Unexpected status code: got %d, expected %d", res.StatusCode, http.StatusServiceUnavailable)
+	}
+}
+
+func TestChannel_wsConnectionHandler_CanAcceptNewConnection(t *testing.T) {
+	path := "/test/path"
+	dispatcher := mocks.NewMockDispatcher(t)
+	connRegistry := mocks.NewMockConnectionRegistry(t)
+	connRegistry.EXPECT().CanAccept().Return(true)
+
+	channel := NewChannel(path, dispatcher, connRegistry)
+
+	// Create a mock request
+	mockRequest := httptest.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
+
+	// Create a mock response writer
+	mockResponseWriter := httptest.NewRecorder()
+
+	// Call the wsConnectionHandler method
+	handler := channel.wsConnectionHandler()
+
+	// Serve the mock request
+	handler.ServeHTTP(mockResponseWriter, mockRequest)
+
+	res := mockResponseWriter.Result()
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusUpgradeRequired {
+		t.Errorf("Unexpected status code: got %d, expected %d", res.StatusCode, http.StatusUpgradeRequired)
 	}
 }

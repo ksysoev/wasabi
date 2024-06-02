@@ -273,3 +273,95 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 		t.Error("Expected onDisconnect hook to be executed")
 	}
 }
+
+func TestConnectionRegistry_WithConnectionLimit(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if registry.connectionLimit != -1 {
+		t.Errorf("Unexpected connection limit: got %d, expected %d", registry.connectionLimit, -1)
+	}
+
+	registry = NewConnectionRegistry(WithConnectionLimit(10))
+
+	if registry.connectionLimit != 10 {
+		t.Errorf("Unexpected connection limit: got %d, expected %d", registry.connectionLimit, 10)
+	}
+}
+
+func TestConnectionRegistry_AddConnection_ConnectionLimitReached(t *testing.T) {
+	registry := NewConnectionRegistry(WithConnectionLimit(2))
+	conn1 := mocks.NewMockConnection(t)
+	conn2 := mocks.NewMockConnection(t)
+	conn3 := mocks.NewMockConnection(t)
+
+	conn1.EXPECT().ID().Return("conn1")
+	conn2.EXPECT().ID().Return("conn2")
+	conn3.EXPECT().ID().Return("conn3")
+
+	registry.connections[conn1.ID()] = conn1
+	registry.connections[conn2.ID()] = conn2
+
+	ctx := context.Background()
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
+
+	server := httptest.NewServer(wsHandlerEcho)
+	defer server.Close()
+	url := "ws://" + server.Listener.Addr().String()
+
+	ws, resp, err := websocket.Dial(context.Background(), url, nil)
+	if err != nil {
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	if resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	conn := registry.AddConnection(ctx, ws, cb)
+
+	if conn != nil {
+		t.Error("Expected connection to be nil")
+	}
+
+	if _, ok := registry.connections[conn3.ID()]; ok {
+		t.Error("Expected connection to not be added to the registry")
+	}
+}
+
+func TestConnectionRegistry_CanAccept_ConnectionLimitNotSet(t *testing.T) {
+	registry := NewConnectionRegistry()
+
+	if !registry.CanAccept() {
+		t.Error("Expected CanAccept to return true when connection limit is not set")
+	}
+
+	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().ID().Return("conn1")
+
+	registry.connections[conn.ID()] = conn
+
+	if !registry.CanAccept() {
+		t.Error("Expected CanAccept to return true when connection limit is not set")
+	}
+}
+
+func TestConnectionRegistry_CanAccept_ConnectionLimitReached(t *testing.T) {
+	registry := NewConnectionRegistry(WithConnectionLimit(2))
+
+	conn1 := mocks.NewMockConnection(t)
+	conn1.EXPECT().ID().Return("conn1")
+
+	registry.connections[conn1.ID()] = conn1
+
+	if !registry.CanAccept() {
+		t.Error("Expected CanAccept to return true when connection limit is reached")
+	}
+
+	conn2 := mocks.NewMockConnection(t)
+	conn2.EXPECT().ID().Return("conn2")
+	registry.connections[conn2.ID()] = conn2
+
+	if registry.CanAccept() {
+		t.Error("Expected CanAccept to return false when connection limit is reached")
+	}
+}

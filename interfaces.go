@@ -59,4 +59,5 @@ type ConnectionRegistry interface {
 	) Connection
 	GetConnection(id string) Connection
 	Close(ctx ...context.Context) error
+	CanAccept() bool
 }
