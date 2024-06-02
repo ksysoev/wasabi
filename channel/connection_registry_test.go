@@ -3,7 +3,6 @@ package channel
 import (
 	"context"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -118,32 +117,6 @@ func TestConnectionRegistry_GetConnection(t *testing.T) {
 
 	if result.ID() != conn.ID() {
 		t.Errorf("Expected connection ID to be %s, but got %s", conn.ID(), result.ID())
-	}
-}
-
-func TestConnectionRegistry_handleClose(t *testing.T) {
-	registry := NewConnectionRegistry()
-
-	conn := mocks.NewMockConnection(t)
-	conn.EXPECT().ID().Return("testID")
-	registry.connections[conn.ID()] = conn
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-
-	go func() {
-		registry.handleClose()
-		wg.Done()
-	}()
-
-	registry.onClose <- conn.ID()
-	close(registry.onClose)
-
-	wg.Wait()
-
-	if registry.GetConnection(conn.ID()) != nil {
-		t.Error("Expected connection to be removed from the registry")
 	}
 }
 
@@ -279,7 +252,7 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 			t.Error("Expected connection to be passed to onDisconnect hook")
 		}
 
-		done <- struct{}{}
+		close(done)
 	}
 
 	registry = NewConnectionRegistry(WithOnDisconnectHook(hook))
@@ -319,8 +292,6 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 	case <-time.After(1 * time.Second):
 		t.Error("Expected connection to be handled")
 	}
-
-	close(registry.onClose)
 
 	select {
 	case <-done:

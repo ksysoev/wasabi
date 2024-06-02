@@ -2,7 +2,6 @@ package channel
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -22,7 +21,6 @@ type ConnectionHook func(wasabi.Connection)
 // ConnectionRegistry is default implementation of ConnectionRegistry
 type ConnectionRegistry struct {
 	connections       map[string]wasabi.Connection
-	onClose           chan string
 	bufferPool        *bufferPool
 	onConnect         ConnectionHook
 	onDisconnect      ConnectionHook
@@ -40,7 +38,6 @@ type ConnectionRegistryOption func(*ConnectionRegistry)
 func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry {
 	reg := &ConnectionRegistry{
 		connections:      make(map[string]wasabi.Connection),
-		onClose:          make(chan string),
 		concurrencyLimit: concurencyLimitPerConnection,
 		bufferPool:       newBufferPool(),
 		frameSizeLimit:   frameSizeLimitInBytes,
@@ -52,8 +49,6 @@ func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry
 		opt(reg)
 	}
 
-	go reg.handleClose()
-
 	return reg
 }
 
@@ -63,44 +58,55 @@ func (r *ConnectionRegistry) HandleConnection(
 	ws *websocket.Conn,
 	cb wasabi.OnMessage,
 ) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	r.mu.RLock()
+	isClosed := r.isClosed
+	numOfConnections := len(r.connections)
+	r.mu.RUnlock()
 
-	if r.connectionLimit > 0 && len(r.connections) >= r.connectionLimit {
-		ws.Close(websocket.StatusTryAgainLater, "Connection limit reached")
-		return
-	}
-
-	if r.isClosed {
+	if isClosed {
 		ws.Close(websocket.StatusServiceRestart, "Server is shutting down")
 		return
 	}
 
-	conn := NewConnection(ctx, ws, cb, r.onClose, r.bufferPool, r.concurrencyLimit, r.inActivityTimeout)
-	r.connections[conn.ID()] = conn
+	if r.connectionLimit > 0 && numOfConnections >= r.connectionLimit {
+		ws.Close(websocket.StatusTryAgainLater, "Connection limit reached")
+		return
+	}
 
+	conn := NewConnection(ctx, ws, cb, r.bufferPool, r.concurrencyLimit, r.inActivityTimeout)
 	conn.ws.SetReadLimit(r.frameSizeLimit)
+
+	id := conn.ID()
+
+	r.mu.Lock()
+	r.connections[id] = conn
+	r.mu.Unlock()
 
 	if r.onConnect != nil {
 		r.onConnect(conn)
 	}
 
 	conn.handleRequests()
+
+	r.mu.Lock()
+	connection := r.connections[id]
+	delete(r.connections, id)
+	r.mu.Unlock()
+
+	if r.onDisconnect != nil {
+		r.onDisconnect(connection)
+	}
 }
 
 // CanAccept checks if the connection registry can accept new connections.
 // It returns true if the registry can accept new connections, and false otherwise.
 func (r *ConnectionRegistry) CanAccept() bool {
-	fmt.Println("Connection limit", r.connectionLimit)
-
 	if r.connectionLimit <= 0 {
 		return true
 	}
 
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-
-	fmt.Println("Connections", len(r.connections))
 
 	return len(r.connections) < r.connectionLimit
 }
@@ -111,29 +117,6 @@ func (r *ConnectionRegistry) GetConnection(id string) wasabi.Connection {
 	defer r.mu.RUnlock()
 
 	return r.connections[id]
-}
-
-// handleClose handles connection cloasures and removes them from registry
-func (r *ConnectionRegistry) handleClose() {
-	wg := sync.WaitGroup{}
-
-	for id := range r.onClose {
-		r.mu.Lock()
-		connection := r.connections[id]
-		delete(r.connections, id)
-		r.mu.Unlock()
-
-		if r.onDisconnect != nil {
-			wg.Add(1)
-
-			go func() {
-				defer wg.Done()
-				r.onDisconnect(connection)
-			}()
-		}
-	}
-
-	wg.Wait()
 }
 
 // Shutdown closes all connections in the ConnectionRegistry.
