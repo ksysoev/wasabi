@@ -34,7 +34,6 @@ type Connection interface {
 	Send(msgType MessageType, msg []byte) error
 	Context() context.Context
 	ID() string
-	HandleRequests()
 	Close(status websocket.StatusCode, reason string, closingCtx ...context.Context) error
 }
 
@@ -52,11 +51,11 @@ type Channel interface {
 
 // ConnectionRegistry is interface for connection registries
 type ConnectionRegistry interface {
-	AddConnection(
+	HandleConnection(
 		ctx context.Context,
 		ws *websocket.Conn,
 		cb OnMessage,
-	) Connection
+	)
 	GetConnection(id string) Connection
 	Close(ctx ...context.Context) error
 	CanAccept() bool

@@ -134,38 +134,6 @@ func (_c *MockConnection_Context_Call) RunAndReturn(run func() context.Context) 
 	return _c
 }
 
-// HandleRequests provides a mock function with given fields:
-func (_m *MockConnection) HandleRequests() {
-	_m.Called()
-}
-
-// MockConnection_HandleRequests_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleRequests'
-type MockConnection_HandleRequests_Call struct {
-	*mock.Call
-}
-
-// HandleRequests is a helper method to define mock.On call
-func (_e *MockConnection_Expecter) HandleRequests() *MockConnection_HandleRequests_Call {
-	return &MockConnection_HandleRequests_Call{Call: _e.mock.On("HandleRequests")}
-}
-
-func (_c *MockConnection_HandleRequests_Call) Run(run func()) *MockConnection_HandleRequests_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockConnection_HandleRequests_Call) Return() *MockConnection_HandleRequests_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockConnection_HandleRequests_Call) RunAndReturn(run func()) *MockConnection_HandleRequests_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // ID provides a mock function with given fields:
 func (_m *MockConnection) ID() string {
 	ret := _m.Called()

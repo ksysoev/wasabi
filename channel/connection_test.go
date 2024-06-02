@@ -47,8 +47,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 
 func TestConn_ID(t *testing.T) {
 	ws := &websocket.Conn{}
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
 
 	if conn.ID() == "" {
 		t.Error("Expected connection ID to be non-empty")
@@ -57,15 +56,14 @@ func TestConn_ID(t *testing.T) {
 
 func TestConn_Context(t *testing.T) {
 	ws := &websocket.Conn{}
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
 
 	if conn.Context() == nil {
 		t.Error("Expected connection context to be non-nil")
 	}
 }
 
-func TestConn_HandleRequests(t *testing.T) {
+func TestConn_handleRequests(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 
@@ -83,15 +81,14 @@ func TestConn_HandleRequests(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
 
 	// Mock OnMessage callback
 	received := make(chan struct{})
 
 	conn.onMessageCB = func(c wasabi.Connection, msgType wasabi.MessageType, data []byte) { received <- struct{}{} }
 
-	go conn.HandleRequests()
+	go conn.handleRequests()
 
 	// Send message to trigger OnMessage callback
 	err = ws.Write(context.Background(), websocket.MessageText, []byte("test message"))
@@ -123,8 +120,7 @@ func TestConn_Send(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
 
 	err = conn.Send(wasabi.MsgTypeText, []byte("test message"))
 	if err != nil {
@@ -148,24 +144,18 @@ func TestConn_close(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 0)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
+	done := make(chan string)
 
-	// Mock OnClose channel
-	closeChan := make(chan string)
-	conn.onClose = closeChan
+	go func() {
+		conn.handleRequests()
+		close(done)
+	}()
 
-	go conn.close()
+	conn.close()
 
 	select {
-	case id, ok := <-closeChan:
-		if !ok {
-			t.Error("Expected OnClose channel to be closed")
-		}
-
-		if id != conn.ID() {
-			t.Errorf("Expected ID to be %s, but got %s", conn.ID(), id)
-		}
+	case <-done:
 	case <-time.After(1 * time.Second):
 		t.Error("Expected OnClose channel to be called")
 	}
@@ -188,13 +178,12 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 	defer func() { _ = ws.CloseNow() }()
 
 	ctx := context.Background()
-	closedChan := make(chan string, 1)
-	c := NewConnection(ctx, ws, nil, closedChan, newBufferPool(), 1, 0)
+	c := NewConnection(ctx, ws, nil, newBufferPool(), 1, 0)
 
-	c.reqWG.Add(1)
-
+	done := make(chan struct{})
 	go func() {
-		c.reqWG.Done()
+		c.handleRequests()
+		close(done)
 	}()
 
 	err = c.Close(websocket.StatusNormalClosure, "test reason", ctx)
@@ -203,11 +192,8 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 	}
 
 	select {
-	case id := <-closedChan:
-		if id != c.id {
-			t.Errorf("Expected ID to be %s, but got %s", c.id, id)
-		}
-	default:
+	case <-done:
+	case <-time.After(1 * time.Second):
 		t.Error("Expected OnClose channel to be called")
 	}
 }
@@ -228,8 +214,14 @@ func TestConn_Close_NoContext(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	closedChan := make(chan string, 1)
-	c := NewConnection(context.Background(), ws, nil, closedChan, newBufferPool(), 1, 0)
+	c := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 0)
+
+	done := make(chan struct{})
+
+	go func() {
+		c.handleRequests()
+		close(done)
+	}()
 
 	err = c.Close(websocket.StatusNormalClosure, "test reason")
 	if err != nil {
@@ -237,30 +229,19 @@ func TestConn_Close_NoContext(t *testing.T) {
 	}
 
 	select {
-	case id := <-closedChan:
-		if id != c.id {
-			t.Errorf("Expected ID to be %s, but got %s", c.id, id)
-		}
-	default:
+	case <-done:
+	case <-time.After(1 * time.Second):
 		t.Error("Expected OnClose channel to be called")
 	}
 }
 
 func TestConn_Close_AlreadyClosed(t *testing.T) {
-	closedChan := make(chan string, 1)
-
-	c := NewConnection(context.Background(), &websocket.Conn{}, nil, closedChan, newBufferPool(), 1, 0)
+	c := NewConnection(context.Background(), &websocket.Conn{}, nil, newBufferPool(), 1, 0)
 	c.state.Store(int32(terminated))
 
 	err := c.Close(websocket.StatusNormalClosure, "test reason", context.Background())
 	if err != ErrConnectionClosed {
 		t.Errorf("Expected error to be %v, but got %v", ErrConnectionClosed, err)
-	}
-
-	select {
-	case <-closedChan:
-		t.Error("Expected OnClose channel to not be called")
-	default:
 	}
 }
 
@@ -280,8 +261,14 @@ func TestConn_watchInactivity(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	onClose := make(chan string)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 10*time.Millisecond)
+
+	done := make(chan struct{})
+
+	go func() {
+		conn.handleRequests()
+		close(done)
+	}()
 
 	defer conn.Close(websocket.StatusNormalClosure, "", context.Background())
 
@@ -290,7 +277,7 @@ func TestConn_watchInactivity(t *testing.T) {
 
 	// Check if the connection was closed due to inactivity
 	select {
-	case <-onClose:
+	case <-done:
 		// Expected
 	case <-time.After(1 * time.Second):
 		t.Error("Expected connection to be closed due to inactivity")
@@ -313,8 +300,7 @@ func TestConn_watchInactivity_stopping_timer(t *testing.T) {
 
 	defer func() { _ = ws.CloseNow() }()
 
-	onClose := make(chan string, 1)
-	conn := NewConnection(context.Background(), ws, nil, onClose, newBufferPool(), 1, 10*time.Millisecond)
+	conn := NewConnection(context.Background(), ws, nil, newBufferPool(), 1, 10*time.Millisecond)
 
 	ctxClose, cancel := context.WithCancel(context.Background())
 	cancel()

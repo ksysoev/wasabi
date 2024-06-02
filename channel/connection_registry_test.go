@@ -3,7 +3,6 @@ package channel
 import (
 	"context"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
-func TestConnectionRegistry_AddConnection(t *testing.T) {
+func TestConnectionRegistry_HandleConnection(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
@@ -20,27 +19,49 @@ func TestConnectionRegistry_AddConnection(t *testing.T) {
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
 
 	if err != nil {
-		t.Error(err)
+		t.Errorf("Unexpected error dialing websocket: %v", err)
+	}
+
+	err = ws.Write(context.Background(), websocket.MessageText, []byte("test"))
+	if err != nil {
+		t.Errorf("Unexpected error writing to websocket: %v", err)
 	}
 
 	if resp.Body != nil {
 		resp.Body.Close()
 	}
 
-	ctx := context.Background()
-
-	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
+	ready := make(chan struct{})
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {
+		close(ready)
+	}
 
 	registry := NewConnectionRegistry()
 
-	conn := registry.AddConnection(ctx, ws, cb)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	if conn == nil {
-		t.Error("Expected connection to be created")
+	done := make(chan struct{})
+	go func() {
+		registry.HandleConnection(ctx, ws, cb)
+		close(done)
+	}()
+
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be handled")
 	}
 
-	if _, ok := registry.connections[conn.ID()]; !ok {
+	if len(registry.connections) != 1 {
 		t.Error("Expected connection to be added to the registry")
+	}
+
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be closed")
 	}
 }
 
@@ -67,10 +88,16 @@ func TestConnectionRegistry_AddConnection_ToClosedRegistry(t *testing.T) {
 
 	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
-	conn := registry.AddConnection(ctx, ws, cb)
+	done := make(chan struct{})
+	go func() {
+		registry.HandleConnection(ctx, ws, cb)
+		close(done)
+	}()
 
-	if conn != nil {
-		t.Error("Expected connection to be nil")
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be closed")
 	}
 }
 
@@ -90,32 +117,6 @@ func TestConnectionRegistry_GetConnection(t *testing.T) {
 
 	if result.ID() != conn.ID() {
 		t.Errorf("Expected connection ID to be %s, but got %s", conn.ID(), result.ID())
-	}
-}
-
-func TestConnectionRegistry_handleClose(t *testing.T) {
-	registry := NewConnectionRegistry()
-
-	conn := mocks.NewMockConnection(t)
-	conn.EXPECT().ID().Return("testID")
-	registry.connections[conn.ID()] = conn
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-
-	go func() {
-		registry.handleClose()
-		wg.Done()
-	}()
-
-	registry.onClose <- conn.ID()
-	close(registry.onClose)
-
-	wg.Wait()
-
-	if registry.GetConnection(conn.ID()) != nil {
-		t.Error("Expected connection to be removed from the registry")
 	}
 }
 
@@ -181,6 +182,7 @@ func TestConnectionRegistry_WithInActivityTimeout(t *testing.T) {
 		t.Errorf("Unexpected inactivity timeout: got %s, expected %s", registry.inActivityTimeout, 5*time.Minute)
 	}
 }
+
 func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 	registry := NewConnectionRegistry()
 
@@ -217,7 +219,20 @@ func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 		t.Error("Expected onConnect callback to be set")
 	}
 
-	registry.AddConnection(context.Background(), ws, func(wasabi.Connection, wasabi.MessageType, []byte) {})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	done := make(chan struct{})
+	go func() {
+		registry.HandleConnection(ctx, ws, func(wasabi.Connection, wasabi.MessageType, []byte) {})
+		close(done)
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be closed")
+	}
 
 	if !executed {
 		t.Error("Expected onConnect callback to be executed")
@@ -237,7 +252,7 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 			t.Error("Expected connection to be passed to onDisconnect hook")
 		}
 
-		done <- struct{}{}
+		close(done)
 	}
 
 	registry = NewConnectionRegistry(WithOnDisconnectHook(hook))
@@ -260,12 +275,23 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 		resp.Body.Close()
 	}
 
-	ctx := context.Background()
-	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
-	conn := registry.AddConnection(ctx, ws, cb)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
 
-	registry.onClose <- conn.ID()
-	close(registry.onClose)
+	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
+
+	ready := make(chan struct{})
+
+	go func() {
+		registry.HandleConnection(ctx, ws, cb)
+		close(ready)
+	}()
+
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be handled")
+	}
 
 	select {
 	case <-done:
@@ -292,11 +318,9 @@ func TestConnectionRegistry_AddConnection_ConnectionLimitReached(t *testing.T) {
 	registry := NewConnectionRegistry(WithConnectionLimit(2))
 	conn1 := mocks.NewMockConnection(t)
 	conn2 := mocks.NewMockConnection(t)
-	conn3 := mocks.NewMockConnection(t)
 
 	conn1.EXPECT().ID().Return("conn1")
 	conn2.EXPECT().ID().Return("conn2")
-	conn3.EXPECT().ID().Return("conn3")
 
 	registry.connections[conn1.ID()] = conn1
 	registry.connections[conn2.ID()] = conn2
@@ -317,13 +341,19 @@ func TestConnectionRegistry_AddConnection_ConnectionLimitReached(t *testing.T) {
 		resp.Body.Close()
 	}
 
-	conn := registry.AddConnection(ctx, ws, cb)
+	done := make(chan struct{})
+	go func() {
+		registry.HandleConnection(ctx, ws, cb)
+		close(done)
+	}()
 
-	if conn != nil {
-		t.Error("Expected connection to be nil")
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected connection to be handled")
 	}
 
-	if _, ok := registry.connections[conn3.ID()]; ok {
+	if len(registry.connections) != 2 {
 		t.Error("Expected connection to not be added to the registry")
 	}
 }

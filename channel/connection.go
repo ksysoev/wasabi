@@ -35,7 +35,6 @@ type Conn struct {
 	ws              *websocket.Conn
 	reqWG           *sync.WaitGroup
 	onMessageCB     wasabi.OnMessage
-	onClose         chan<- string
 	ctxCancel       context.CancelFunc
 	bufferPool      *bufferPool
 	state           *atomic.Int32
@@ -50,7 +49,6 @@ func NewConnection(
 	ctx context.Context,
 	ws *websocket.Conn,
 	cb wasabi.OnMessage,
-	onClose chan<- string,
 	bufferPool *bufferPool,
 	concurrencyLimit uint,
 	inActivityTimeout time.Duration,
@@ -65,7 +63,6 @@ func NewConnection(
 		ctx:             ctx,
 		ctxCancel:       cancel,
 		onMessageCB:     cb,
-		onClose:         onClose,
 		reqWG:           &sync.WaitGroup{},
 		state:           &state,
 		bufferPool:      bufferPool,
@@ -91,8 +88,8 @@ func (c *Conn) Context() context.Context {
 	return c.ctx
 }
 
-// HandleRequests handles incoming messages
-func (c *Conn) HandleRequests() {
+// handleRequests handles incoming messages
+func (c *Conn) handleRequests() {
 	defer c.close()
 
 	for c.ctx.Err() == nil {
@@ -153,7 +150,7 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 }
 
 // close closes the connection.
-// It cancels the context, sends the connection ID to the onClose channel,
+// It cancels the context
 // marks the connection as closed, and waits for any pending requests to complete.
 func (c *Conn) close() {
 	if !c.state.CompareAndSwap(int32(connected), int32(terminated)) &&
@@ -162,7 +159,6 @@ func (c *Conn) close() {
 	}
 
 	c.ctxCancel()
-	c.onClose <- c.id
 
 	// Terminate the connection immediately.
 	_ = c.ws.CloseNow()
@@ -177,7 +173,7 @@ func (c *Conn) close() {
 // before closing the connection. If the context is canceled, the connection
 // is closed immediately. If there are no pending requests, the connection is
 // closed immediately. After closing the connection, the connection state is
-// set to terminated and the `onClose` channel is notified with the connection ID.
+// set to terminated
 func (c *Conn) Close(status websocket.StatusCode, reason string, ctx ...context.Context) error {
 	if !c.state.CompareAndSwap(int32(connected), int32(closing)) {
 		return ErrConnectionClosed
@@ -202,7 +198,6 @@ func (c *Conn) Close(status websocket.StatusCode, reason string, ctx ...context.
 
 	c.ctxCancel()
 	c.state.Store(int32(terminated))
-	c.onClose <- c.id
 
 	return nil
 }

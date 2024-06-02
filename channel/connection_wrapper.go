@@ -48,11 +48,6 @@ func (cw *ConnectionWrapper) Context() context.Context {
 	return cw.connection.Context()
 }
 
-// HandleRequests handles incoming requests on the connection.
-func (cw *ConnectionWrapper) HandleRequests() {
-	cw.connection.HandleRequests()
-}
-
 // Send sends a message of the specified type and content over the connection.
 // If an onSendWrapper function is set, it will be called instead of directly sending the message.
 // The onSendWrapper function should have the signature func(connection Connection, msgType MessageType, msg []byte) error.

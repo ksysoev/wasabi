@@ -26,56 +26,6 @@ func (_m *MockConnectionRegistry) EXPECT() *MockConnectionRegistry_Expecter {
 	return &MockConnectionRegistry_Expecter{mock: &_m.Mock}
 }
 
-// AddConnection provides a mock function with given fields: ctx, ws, cb
-func (_m *MockConnectionRegistry) AddConnection(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage) wasabi.Connection {
-	ret := _m.Called(ctx, ws, cb)
-
-	if len(ret) == 0 {
-		panic("no return value specified for AddConnection")
-	}
-
-	var r0 wasabi.Connection
-	if rf, ok := ret.Get(0).(func(context.Context, *websocket.Conn, wasabi.OnMessage) wasabi.Connection); ok {
-		r0 = rf(ctx, ws, cb)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(wasabi.Connection)
-		}
-	}
-
-	return r0
-}
-
-// MockConnectionRegistry_AddConnection_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddConnection'
-type MockConnectionRegistry_AddConnection_Call struct {
-	*mock.Call
-}
-
-// AddConnection is a helper method to define mock.On call
-//   - ctx context.Context
-//   - ws *websocket.Conn
-//   - cb wasabi.OnMessage
-func (_e *MockConnectionRegistry_Expecter) AddConnection(ctx interface{}, ws interface{}, cb interface{}) *MockConnectionRegistry_AddConnection_Call {
-	return &MockConnectionRegistry_AddConnection_Call{Call: _e.mock.On("AddConnection", ctx, ws, cb)}
-}
-
-func (_c *MockConnectionRegistry_AddConnection_Call) Run(run func(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage)) *MockConnectionRegistry_AddConnection_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*websocket.Conn), args[2].(wasabi.OnMessage))
-	})
-	return _c
-}
-
-func (_c *MockConnectionRegistry_AddConnection_Call) Return(_a0 wasabi.Connection) *MockConnectionRegistry_AddConnection_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockConnectionRegistry_AddConnection_Call) RunAndReturn(run func(context.Context, *websocket.Conn, wasabi.OnMessage) wasabi.Connection) *MockConnectionRegistry_AddConnection_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // CanAccept provides a mock function with given fields:
 func (_m *MockConnectionRegistry) CanAccept() bool {
 	ret := _m.Called()
@@ -224,6 +174,41 @@ func (_c *MockConnectionRegistry_GetConnection_Call) Return(_a0 wasabi.Connectio
 }
 
 func (_c *MockConnectionRegistry_GetConnection_Call) RunAndReturn(run func(string) wasabi.Connection) *MockConnectionRegistry_GetConnection_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// HandleConnection provides a mock function with given fields: ctx, ws, cb
+func (_m *MockConnectionRegistry) HandleConnection(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage) {
+	_m.Called(ctx, ws, cb)
+}
+
+// MockConnectionRegistry_HandleConnection_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HandleConnection'
+type MockConnectionRegistry_HandleConnection_Call struct {
+	*mock.Call
+}
+
+// HandleConnection is a helper method to define mock.On call
+//   - ctx context.Context
+//   - ws *websocket.Conn
+//   - cb wasabi.OnMessage
+func (_e *MockConnectionRegistry_Expecter) HandleConnection(ctx interface{}, ws interface{}, cb interface{}) *MockConnectionRegistry_HandleConnection_Call {
+	return &MockConnectionRegistry_HandleConnection_Call{Call: _e.mock.On("HandleConnection", ctx, ws, cb)}
+}
+
+func (_c *MockConnectionRegistry_HandleConnection_Call) Run(run func(ctx context.Context, ws *websocket.Conn, cb wasabi.OnMessage)) *MockConnectionRegistry_HandleConnection_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*websocket.Conn), args[2].(wasabi.OnMessage))
+	})
+	return _c
+}
+
+func (_c *MockConnectionRegistry_HandleConnection_Call) Return() *MockConnectionRegistry_HandleConnection_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockConnectionRegistry_HandleConnection_Call) RunAndReturn(run func(context.Context, *websocket.Conn, wasabi.OnMessage)) *MockConnectionRegistry_HandleConnection_Call {
 	_c.Call.Return(run)
 	return _c
 }
