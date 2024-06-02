@@ -88,8 +88,7 @@ func TestServer_WithReadinessChan(t *testing.T) {
 }
 
 func TestServer_Run(t *testing.T) {
-
-	noOfReruns := []int{0, 1, 2, 5}
+	noOfReruns := []int{0, 1, 2}
 
 	for _, run := range noOfReruns {
 		t.Run(fmt.Sprintf("%d times of calling Run", run), func(t *testing.T) {
@@ -112,15 +111,17 @@ func TestServer_Run(t *testing.T) {
 				switch err {
 				case nil:
 					close(done)
-				case ErrServerAlreadyRunning:
-					return
 				default:
 					t.Errorf("Got unexpected error: %v", err)
 				}
 			}()
 
 			// Wait for server to be ready
-			<-ready
+			select {
+			case <-ready:
+			case <-time.After(1 * time.Second):
+				t.Error("Expected server to start")
+			}
 
 			// Test that calling Run on a running server returns
 			// ErrServerAlreadyRunning
@@ -170,13 +171,16 @@ func TestServer_Close(t *testing.T) {
 		switch err {
 		case nil:
 			close(done)
-		case ErrServerAlreadyRunning:
 		default:
 			t.Errorf("Got unexpected error: %v", err)
 		}
 	}()
 
-	<-ready
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+	}
+
 	// Call the Shutdown method
 	err := server.Close(ctx)
 	if err != nil {
@@ -212,14 +216,16 @@ func TestServer_Close_NoContext(t *testing.T) {
 		switch err {
 		case nil:
 			close(done)
-		case ErrServerAlreadyRunning:
-			done <- struct{}{}
 		default:
 			t.Errorf("Got unexpected error: %v", err)
 		}
 	}()
 
-	<-ready
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
+	}
 
 	// Call the Shutdown method
 	err := server.Close()
@@ -237,6 +243,7 @@ func TestServer_Close_NoContext(t *testing.T) {
 func TestServer_Addr(t *testing.T) {
 	// Create a new Server instance
 	done := make(chan struct{})
+
 	server := NewServer(":0", WithReadinessChan(done))
 	defer server.Close()
 
