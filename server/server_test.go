@@ -81,8 +81,8 @@ func TestServer_WithReadinessChan(t *testing.T) {
 	}
 
 	close(server.ready)
-	_, ok := <-ready
-	if ok {
+
+	if _, ok := <-ready; ok {
 		t.Error("Expected closed channel")
 	}
 }
