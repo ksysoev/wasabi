@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -70,55 +71,82 @@ func TestServer_WithBaseContext(t *testing.T) {
 	}
 }
 
-func TestServer_Run(t *testing.T) {
-	// Create a new Server instance
-	server := NewServer(":0")
+func TestServer_WithReadinessChan(t *testing.T) {
+	// Create a new Server instance with a base context
+	ready := make(chan struct{})
+	server := NewServer(":0", WithReadinessChan(ready))
 
-	channel := mocks.NewMockChannel(t)
-	channel.EXPECT().Path().Return("/test")
-	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-
-	server.AddChannel(channel)
-
-	done := make(chan struct{})
-
-	// Run the server
-	for i := 0; i < 2; i++ {
-		go func() {
-			err := server.Run()
-			switch err {
-			case nil:
-				close(done)
-			case ErrServerAlreadyRunning:
-				done <- struct{}{}
-			default:
-				t.Errorf("Got unexpected error: %v", err)
-			}
-		}()
+	if server.ready == nil {
+		t.Error("Expected non-nil channel")
 	}
 
-	select {
-	case _, ok := <-done:
-		if !ok {
-			t.Error("Expected server to start")
-		}
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to start")
-	}
-
-	if err := server.handler.Close(); err != nil {
-		t.Errorf("Expected no error, but got %v", err)
-	}
-
-	select {
-	case <-done:
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to stop")
+	close(server.ready)
+	_, ok := <-ready
+	if ok {
+		t.Error("Expected closed channel")
 	}
 }
+
+func TestServer_Run(t *testing.T) {
+
+	noOfReruns := []int{0, 1, 2, 5}
+
+	for _, run := range noOfReruns {
+		t.Run(fmt.Sprintf("%d times of calling Run", run), func(t *testing.T) {
+			// Create a new Server instance
+			ready := make(chan struct{})
+			server := NewServer(":0", WithReadinessChan(ready))
+
+			channel := mocks.NewMockChannel(t)
+			channel.EXPECT().Path().Return("/test")
+			channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+
+			server.AddChannel(channel)
+
+			// for signaling server stopped without error
+			done := make(chan struct{})
+
+			// Run the server
+			go func() {
+				err := server.Run()
+				switch err {
+				case nil:
+					close(done)
+				case ErrServerAlreadyRunning:
+					return
+				default:
+					t.Errorf("Got unexpected error: %v", err)
+				}
+			}()
+
+			// Wait for server to be ready
+			<-ready
+
+			// Test that calling Run on a running server returns
+			// ErrServerAlreadyRunning
+			for i := 0; i < run; i++ {
+				if err := server.Run(); err != ErrServerAlreadyRunning {
+					t.Error("Should return ErrServerAlreadyRunning when triggered run on running server")
+				}
+			}
+
+			if err := server.handler.Close(); err != nil {
+				t.Errorf("Expected no error, but got %v", err)
+			}
+
+			select {
+			case <-done:
+			case <-time.After(1 * time.Second):
+				t.Error("Expected server to stop")
+			}
+		})
+	}
+}
+
 func TestServer_Close(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(":0")
+	ready := make(chan struct{})
+	server := NewServer(":0", WithReadinessChan(ready))
 
 	// Create a context with a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -137,29 +165,18 @@ func TestServer_Close(t *testing.T) {
 	done := make(chan struct{})
 
 	// Run the server
-	for i := 0; i < 2; i++ {
-		go func() {
-			err := server.Run()
-			switch err {
-			case nil:
-				close(done)
-			case ErrServerAlreadyRunning:
-				done <- struct{}{}
-			default:
-				t.Errorf("Got unexpected error: %v", err)
-			}
-		}()
-	}
-
-	select {
-	case _, ok := <-done:
-		if !ok {
-			t.Error("Expected server to start")
+	go func() {
+		err := server.Run()
+		switch err {
+		case nil:
+			close(done)
+		case ErrServerAlreadyRunning:
+		default:
+			t.Errorf("Got unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to start")
-	}
+	}()
 
+	<-ready
 	// Call the Shutdown method
 	err := server.Close(ctx)
 	if err != nil {
@@ -175,7 +192,8 @@ func TestServer_Close(t *testing.T) {
 
 func TestServer_Close_NoContext(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(":0")
+	ready := make(chan struct{})
+	server := NewServer(":0", WithReadinessChan(ready))
 
 	// Create a mock channel
 	channel := mocks.NewMockChannel(t)
@@ -189,28 +207,19 @@ func TestServer_Close_NoContext(t *testing.T) {
 	done := make(chan struct{})
 
 	// Run the server
-	for i := 0; i < 2; i++ {
-		go func() {
-			err := server.Run()
-			switch err {
-			case nil:
-				close(done)
-			case ErrServerAlreadyRunning:
-				done <- struct{}{}
-			default:
-				t.Errorf("Got unexpected error: %v", err)
-			}
-		}()
-	}
-
-	select {
-	case _, ok := <-done:
-		if !ok {
-			t.Error("Expected server to start")
+	go func() {
+		err := server.Run()
+		switch err {
+		case nil:
+			close(done)
+		case ErrServerAlreadyRunning:
+			done <- struct{}{}
+		default:
+			t.Errorf("Got unexpected error: %v", err)
 		}
-	case <-time.After(1 * time.Second):
-		t.Error("Expected server to start")
-	}
+	}()
+
+	<-ready
 
 	// Call the Shutdown method
 	err := server.Close()
