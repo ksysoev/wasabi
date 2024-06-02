@@ -2,6 +2,7 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ const (
 	concurencyLimitPerConnection = 25
 	frameSizeLimitInBytes        = 32768
 	inActivityTimeout            = 0 * time.Second
+	connectionLimt               = -1
 )
 
 type ConnectionHook func(wasabi.Connection)
@@ -25,6 +27,7 @@ type ConnectionRegistry struct {
 	onConnect         ConnectionHook
 	onDisconnect      ConnectionHook
 	concurrencyLimit  uint
+	connectionLimit   int
 	frameSizeLimit    int64
 	inActivityTimeout time.Duration
 	mu                sync.RWMutex
@@ -42,6 +45,7 @@ func NewConnectionRegistry(opts ...ConnectionRegistryOption) *ConnectionRegistry
 		bufferPool:       newBufferPool(),
 		frameSizeLimit:   frameSizeLimitInBytes,
 		isClosed:         false,
+		connectionLimit:  connectionLimt,
 	}
 
 	for _, opt := range opts {
@@ -62,6 +66,11 @@ func (r *ConnectionRegistry) AddConnection(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	if r.connectionLimit > 0 && len(r.connections) >= r.connectionLimit {
+		ws.Close(websocket.StatusTryAgainLater, "Connection limit reached")
+		return nil
+	}
+
 	if r.isClosed {
 		return nil
 	}
@@ -76,6 +85,23 @@ func (r *ConnectionRegistry) AddConnection(
 	}
 
 	return conn
+}
+
+// CanAccept checks if the connection registry can accept new connections.
+// It returns true if the registry can accept new connections, and false otherwise.
+func (r *ConnectionRegistry) CanAccept() bool {
+	fmt.Println("Connection limit", r.connectionLimit)
+
+	if r.connectionLimit <= 0 {
+		return true
+	}
+
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	fmt.Println("Connections", len(r.connections))
+
+	return len(r.connections) < r.connectionLimit
 }
 
 // GetConnection returns connection by id
@@ -187,5 +213,15 @@ func WithOnConnectHook(cb ConnectionHook) ConnectionRegistryOption {
 func WithOnDisconnectHook(cb ConnectionHook) ConnectionRegistryOption {
 	return func(r *ConnectionRegistry) {
 		r.onDisconnect = cb
+	}
+}
+
+// WithConnectionLimit sets the maximum number of connections that can be accepted by the ConnectionRegistry.
+// The default connection limit is -1, which means there is no limit on the number of connections.
+// If the connection limit is set to a positive integer, the ConnectionRegistry will not accept new connections
+// once the number of active connections reaches the specified limit.
+func WithConnectionLimit(limit int) ConnectionRegistryOption {
+	return func(r *ConnectionRegistry) {
+		r.connectionLimit = limit
 	}
 }
