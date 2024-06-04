@@ -1,4 +1,4 @@
-// Contains integration tests for wasabi library.
+// Package tests contains integration tests for wasabi library.
 package tests
 
 import (
