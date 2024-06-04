@@ -44,6 +44,7 @@ func TestEcho(t *testing.T) {
 	}
 
 	url := "ws://" + s.Addr().String()
+
 	ws, _, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %s", err)
@@ -56,9 +57,9 @@ func TestEcho(t *testing.T) {
 		t.Errorf("Unexpected error writing to websocket: %s", err)
 	}
 
-	var actual interface{}
-	err = wsjson.Read(context.Background(), ws, &actual)
-	if err != nil {
+	var actual any
+
+	if err := wsjson.Read(context.Background(), ws, &actual); err != nil {
 		t.Errorf("Unexpected error reading from websocket: %s", err)
 	}
 
