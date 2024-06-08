@@ -59,7 +59,7 @@ func TestServer_WithBaseContext(t *testing.T) {
 	// Create a new Server instance with a base context
 	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
 
-	server := NewServer(":0", WithBaseContext(ctx))
+	server := NewServer(":0", WithBaseContext(NewWasabiDefaultContext(ctx)))
 
 	// Check if the base context was set correctly
 	if server.baseCtx == nil {

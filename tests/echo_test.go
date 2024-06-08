@@ -28,7 +28,7 @@ func TestEcho(t *testing.T) {
 	ch := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
 	ready := make(chan struct{})
-	s := server.NewServer(":0", server.WithBaseContext(context.Background()), server.WithReadinessChan(ready))
+	s := server.NewServer(":0", server.WithBaseContext(server.NewWasabiDefaultContext(context.Background())), server.WithReadinessChan(ready))
 	s.AddChannel(ch)
 
 	go func() {

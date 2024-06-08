@@ -6,21 +6,15 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/ksysoev/wasabi"
 	"golang.org/x/exp/slog"
 )
 
-const (
-	ReadHeaderTimeout = 3 * time.Second
-	ReadTimeout       = 30 * time.Second
-)
-
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
-	baseCtx      context.Context
+	baseCtx      WasabiContext
 	listener     net.Listener
 	listenerLock *sync.Mutex
 	mutex        *sync.Mutex
@@ -54,7 +48,7 @@ func NewServer(addr string, opts ...Option) *Server {
 		channels:     make([]wasabi.Channel, 0, 1),
 		mutex:        &sync.Mutex{},
 		listenerLock: &sync.Mutex{},
-		baseCtx:      context.Background(),
+		baseCtx:      NewWasabiDefaultContext(context.Background()),
 	}
 
 	for _, opt := range opts {
@@ -63,8 +57,8 @@ func NewServer(addr string, opts ...Option) *Server {
 
 	server.handler = &http.Server{
 		Addr:              addr,
-		ReadHeaderTimeout: ReadHeaderTimeout,
-		ReadTimeout:       ReadTimeout,
+		ReadHeaderTimeout: server.baseCtx.GetHttpConfig().ReadHeaderTimeout,
+		ReadTimeout:       server.baseCtx.GetHttpConfig().ReadTimeout,
 		BaseContext: func(_ net.Listener) context.Context {
 			return server.baseCtx
 		},
@@ -177,7 +171,7 @@ func (s *Server) Addr() net.Addr {
 
 // BaseContext optionally specifies based context that will be used for all connections.
 // If not specified, context.Background() will be used.
-func WithBaseContext(ctx context.Context) Option {
+func WithBaseContext(ctx WasabiContext) Option {
 	if ctx == nil {
 		panic("nil context")
 	}
