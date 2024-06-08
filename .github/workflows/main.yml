@@ -1,6 +1,14 @@
 name: WaSAbi
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   tests:
