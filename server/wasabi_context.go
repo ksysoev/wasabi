@@ -33,10 +33,15 @@ var defaultHttpConfig *HttpConfig
 func getDefaultHttpConfig() *HttpConfig {
 	if defaultHttpConfig == nil {
 		defaultHttpConfig = &HttpConfig{
-			ReadHeaderTimeout: 3 * time.Second,
-			ReadTimeout:       30 * time.Second,
+			ReadHeaderTimeout: ReadHeaderTimeoutSeconds * time.Second,
+			ReadTimeout:       ReadTimeoutSeconds * time.Second,
 		}
 	}
 
 	return defaultHttpConfig
 }
+
+const (
+	ReadHeaderTimeoutSeconds = 3
+	ReadTimeoutSeconds       = 30
+)
