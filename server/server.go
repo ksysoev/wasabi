@@ -57,8 +57,8 @@ func NewServer(addr string, opts ...Option) *Server {
 
 	server.handler = &http.Server{
 		Addr:              addr,
-		ReadHeaderTimeout: server.baseCtx.GetHttpConfig().ReadHeaderTimeout,
-		ReadTimeout:       server.baseCtx.GetHttpConfig().ReadTimeout,
+		ReadHeaderTimeout: server.baseCtx.GetHTTPConfig().ReadHeaderTimeout,
+		ReadTimeout:       server.baseCtx.GetHTTPConfig().ReadTimeout,
 		BaseContext: func(_ net.Listener) context.Context {
 			return server.baseCtx
 		},

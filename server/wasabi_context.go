@@ -7,38 +7,43 @@ import (
 
 type WasabiContext interface {
 	context.Context
-	GetHttpConfig() HttpConfig
+	WithValue(key, value interface{}) WasabiContext
+	GetHTTPConfig() HTTPConfig
 }
 
 type WasabiDefaultContextImpl struct {
 	context.Context
 }
 
-func (w WasabiDefaultContextImpl) GetHttpConfig() HttpConfig {
-	return *getDefaultHttpConfig()
+func (w WasabiDefaultContextImpl) GetHTTPConfig() HTTPConfig {
+	return *getDefaultHTTPConfig()
 }
 
-type HttpConfig struct {
+func (w WasabiDefaultContextImpl) WithValue(key, value interface{}) WasabiContext {
+	return WasabiDefaultContextImpl{Context: context.WithValue(w.Context, key, value)}
+}
+
+type HTTPConfig struct {
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 }
 
 func NewWasabiDefaultContext(fromContext context.Context) WasabiDefaultContextImpl {
-	var ctx = new(WasabiDefaultContextImpl)
-	return *ctx
+	var ctx = WasabiDefaultContextImpl{fromContext}
+	return ctx
 }
 
-var defaultHttpConfig *HttpConfig
+var defaultHTTPConfig *HTTPConfig
 
-func getDefaultHttpConfig() *HttpConfig {
-	if defaultHttpConfig == nil {
-		defaultHttpConfig = &HttpConfig{
+func getDefaultHTTPConfig() *HTTPConfig {
+	if defaultHTTPConfig == nil {
+		defaultHTTPConfig = &HTTPConfig{
 			ReadHeaderTimeout: ReadHeaderTimeoutSeconds * time.Second,
 			ReadTimeout:       ReadTimeoutSeconds * time.Second,
 		}
 	}
 
-	return defaultHttpConfig
+	return defaultHTTPConfig
 }
 
 const (

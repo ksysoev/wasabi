@@ -57,8 +57,8 @@ func TestServer_AddChannel(t *testing.T) {
 
 func TestServer_WithBaseContext(t *testing.T) {
 	// Create a new Server instance with a base context
-	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
-
+	ctx:= NewWasabiDefaultContext(context.Background())
+	ctx.WithValue(testCtxKey("test"), "test")
 	server := NewServer(":0", WithBaseContext(NewWasabiDefaultContext(ctx)))
 
 	// Check if the base context was set correctly
