@@ -2,6 +2,8 @@
 
 [![WaSAbi](https://github.com/ksysoev/wasabi/actions/workflows/main.yml/badge.svg)](https://github.com/ksysoev/wasabi/actions/workflows/main.yml)
 [![CodeCov](https://codecov.io/gh/ksysoev/wasabi/graph/badge.svg?token=3KGTO1UINI)](https://codecov.io/gh/ksysoev/wasabi)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ksysoev/wasabi)](https://goreportcard.com/report/github.com/ksysoev/wasabi)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ksysoev/wasabi.svg)](https://pkg.go.dev/github.com/ksysoev/wasabi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 <p align="center">
