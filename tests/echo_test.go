@@ -22,8 +22,8 @@ func TestEcho(t *testing.T) {
 		return conn.Send(wasabi.MsgTypeText, req.Data())
 	})
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
-		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
 	ch := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 

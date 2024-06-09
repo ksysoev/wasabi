@@ -30,8 +30,8 @@ func main() {
 		return httpReq, nil
 	})
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
-		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
 
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
