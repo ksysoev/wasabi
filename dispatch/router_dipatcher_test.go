@@ -12,7 +12,7 @@ import (
 func TestNewRouterDispatcher(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return mocks.NewMockRequest(t)
 	}
 
@@ -28,7 +28,7 @@ func TestNewRouterDispatcher(t *testing.T) {
 }
 func TestRouterDispatcher_AddBackend(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return mocks.NewMockRequest(t)
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -63,7 +63,7 @@ func TestRouterDispatcher_DispatchDefaultBackend(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return req
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -85,7 +85,7 @@ func TestRouterDispatcher_DispatchDefaultBackend(t *testing.T) {
 func TestRouterDispatcher_DispatchByRoutingKey(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return req
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -108,7 +108,7 @@ func TestRouterDispatcher_DispatchByRoutingKey(t *testing.T) {
 
 func TestRouterDispatcher_DispatchWrongRequest(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return nil
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -124,7 +124,7 @@ func TestRouterDispatcher_DispatchWrongRequest(t *testing.T) {
 func TestRouterDispatcher_DispatchErrorHandlingRequest(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	req := mocks.NewMockRequest(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return req
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -145,7 +145,7 @@ func TestRouterDispatcher_DispatchErrorHandlingRequest(t *testing.T) {
 }
 func TestRouterDispatcher_Use(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return mocks.NewMockRequest(t)
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
@@ -166,7 +166,7 @@ func TestRouterDispatcher_UseMiddleware(t *testing.T) {
 	defaultBackend := mocks.NewMockBackend(t)
 	defaultBackend.EXPECT().Handle(mockConn, mockReq).Return(testError)
 
-	parser := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte, _ context.Context) wasabi.Request {
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
 		return mocks.NewMockRequest(t)
 	}
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
