@@ -69,6 +69,8 @@ func TestRouterDispatcher_DispatchDefaultBackend(t *testing.T) {
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().Context().Return(context.Background())
+
 	data := []byte("test data")
 
 	// Test case 1: Request with existing routing key
@@ -89,6 +91,8 @@ func TestRouterDispatcher_DispatchByRoutingKey(t *testing.T) {
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().Context().Return(context.Background())
+
 	data := []byte("test data")
 
 	// Test case 1: Request with existing routing key
@@ -110,6 +114,8 @@ func TestRouterDispatcher_DispatchWrongRequest(t *testing.T) {
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().Context().Return(context.Background())
+
 	data := []byte("test data")
 
 	dispatcher.Dispatch(conn, wasabi.MsgTypeText, data)
@@ -124,6 +130,8 @@ func TestRouterDispatcher_DispatchErrorHandlingRequest(t *testing.T) {
 	dispatcher := NewRouterDispatcher(defaultBackend, parser)
 
 	conn := mocks.NewMockConnection(t)
+	conn.EXPECT().Context().Return(context.Background())
+
 	data := []byte("test data")
 
 	routingKey := "key1"
