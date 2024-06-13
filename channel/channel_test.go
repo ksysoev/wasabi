@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ksysoev/wasabi/mocks"
+	"nhooyr.io/websocket"
 )
 
 func TestNewChannel(t *testing.T) {
@@ -202,5 +203,33 @@ func TestChannel_wsConnectionHandler_CanAcceptNewConnection(t *testing.T) {
 
 	if res.StatusCode != http.StatusUpgradeRequired {
 		t.Errorf("Unexpected status code: got %d, expected %d", res.StatusCode, http.StatusUpgradeRequired)
+	}
+}
+func TestChannel_WithCompressionMode(t *testing.T) {
+	path := "/test/path"
+	dispatcher := mocks.NewMockDispatcher(t)
+
+	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
+
+	// Assert that the default compression mode and threshold are set correctly
+	if channel.config.compressionMode != websocket.CompressionDisabled {
+		t.Errorf("Unexpected compression mode: got %v, expected %v", channel.config.compressionMode, websocket.CompressionNoContextTakeover)
+	}
+
+	if channel.config.compressionThreshold != 0 {
+		t.Errorf("Unexpected compression threshold: got %d, expected %d", channel.config.compressionThreshold, 0)
+	}
+
+	compressionMode := websocket.CompressionNoContextTakeover
+	compressionThreshold := 1024
+	channel = NewChannel(path, dispatcher, NewConnectionRegistry(), WithCompressionMode(compressionMode, compressionThreshold))
+
+	// Assert that the compression mode and threshold are set correctly
+	if channel.config.compressionMode != compressionMode {
+		t.Errorf("Unexpected compression mode: got %v, expected %v", channel.config.compressionMode, compressionMode)
+	}
+
+	if channel.config.compressionThreshold != compressionThreshold {
+		t.Errorf("Unexpected compression threshold: got %d, expected %d", channel.config.compressionThreshold, compressionThreshold)
 	}
 }
