@@ -1,3 +1,31 @@
+// Package server provides a HTTP server with custom timeouts and error handling.
+//
+// This package is designed to be used with the wasabi package for handling HTTP requests.
+// It provides a Server struct that wraps the standard http.Server with additional functionality.
+//
+// The Server struct includes a base context, a net.Listener for accepting connections, and a mutex for thread safety.
+// It also includes a ready channel that can be used to signal when the server is ready to accept connections.
+//
+// The server uses custom read header and read timeouts, defined as constants.
+// These timeouts help to prevent slow client attacks by limiting the amount of time the server will wait for a client to send its request.
+//
+// The server also provides a custom error, ErrServerAlreadyRunning, which is returned when there's an attempt to start a server that's already running.
+//
+// Usage:
+//
+//	s := &server.Server{
+//	    baseCtx: context.Background(),
+//	    handler: &http.Server{
+//	        Addr: ":8080",
+//	        Handler: myHandler,
+//	    },
+//	}
+//	err := s.Start()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+// This will start a new server on port 8080 with the provided handler.
 package server
 
 import (
