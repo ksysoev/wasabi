@@ -63,7 +63,7 @@ func main() {
     // We create an error handling middleware with request.NewErrorHandlingMiddleware. 
     // This middleware logs any errors that occur when handling a request and sends a response back to the client.
     ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
-        conn.Send([]byte("Failed to process request: " + err.Error()))
+        conn.Send(wasabi.MsgTypeTex, []byte("Failed to process request: " + err.Error()))
         return nil
     })
 
@@ -147,9 +147,16 @@ The server is a crucial part of the WebSocket service. It's responsible for mana
 
 ### Channel
 
-A Channel represents an endpoint for WebSocket connections. It's responsible for handling all WebSocket connections and messages for a specific path.
+A Channel in the context of WebSocket connections serves as an endpoint. It is responsible for managing WebSocket connections and messages for a specific path.
 
-When a new channel is created with `channel.NewChannel`, it's initialized with a path, a dispatcher, and a connection registry. The path is the URL path that the channel will handle. The dispatcher is used to process incoming WebSocket messages, and the connection registry is used to manage active WebSocket connections.
+Key responsibilities of the Channel abstraction include:
+
+- Processing client requests to establish WebSocket connections.
+- Storing configuration required for establishing WebSocket connections.
+- Managing and executing middleware for HTTP requests.
+
+
+When a new channel is created with `channel.NewChannel`, it is initialized with a path, a dispatcher, and a connection registry. The path is the URL path that the channel will handle. The dispatcher is used to process incoming WebSocket messages, and the connection registry is used to manage active WebSocket connections.
 
 ```golang
 import "github.com/ksysoev/wasabi/channel"
@@ -167,7 +174,41 @@ server.AddChannel(chatChan)
 
 In this example, the channel is added to the server. Any incoming WebSocket requests on the `/chat` path will be handled by this channel.
 
-The channel is a crucial part of the WebSocket service. It's responsible for managing WebSocket connections and processing WebSocket messages for a specific path.
+### Connection Registry
+
+The Connection Registry is responsible for:
+
+- Managing the lifecycle of connections.
+- Defining WebSocket connections configurations.
+- Managing hooks for establishing and closing client connections.
+
+```golang 
+import "github.com/ksysoev/wasabi/channel"
+
+connRegistry := channel.NewConnectionRegistry()
+```
+
+In this example, a new connection registry is created.
+
+### Connection
+
+A Connection represents an active WebSocket connection. It provides methods for sending messages and closing the connection.
+
+To send a message, use the `Send` method. This method takes a message type and a bytes slice as arguments.
+
+```golang
+err := conn.Send(wasabi.MsgTypeText, "Hello World!")
+```
+
+In this example, a text message "Hello World!" is being sent over the WebSocket connection.
+
+To close a WebSocket connection, use the `Close` method. This method takes a status code and a string reason as arguments.
+
+```golang
+conn.Close(websocket.StatusGoingAway, "Server is restarting")
+```
+
+In this example, the WebSocket connection is being closed with a status code indicating that the server is going away and a reason "Server is restarting".
 
 ### Dispatcher
 
@@ -224,8 +265,6 @@ backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 ```
 
 In this code example, we're creating an HTTP backend to integrate with our application service. The backend takes a WebSocket request, creates a new HTTP request with the same data, and returns the HTTP request for further processing.
-
-
 
 
 ## Contributing
