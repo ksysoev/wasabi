@@ -229,7 +229,7 @@ chatDipatcher := dispatcher.NewRouterDispatcher(
 
 In this example, a new dispatcher is created with a custom backend that is stored in `myBackend` variable. The second argument is the request parser that accepts WebSocket messages and returns Request.
 
-The router dispatcher allows to routing of incoming WebSocket messages to the desired backend, to add additional backends to the created dispatcher you can use `channel.AddBackend` method:
+The router dispatcher allows to routing of incoming WebSocket messages to multiple backends, to add additional backends to the created dispatcher you can use `channel.AddBackend` method:
 
 ```golang
 chatDipatcher.AddBackend(myNotificationBackend, []string{"notifications", "subscriptions"})
@@ -238,6 +238,47 @@ chatDipatcher.AddBackend(myNotificationBackend, []string{"notifications", "subsc
 In this example, we're adding a backend to the chatDispatcher. The backend is named myNotificationBackend and it's being associated with two routing keys: "notifications" and "subscriptions".
 
 The dispatcher is responsible for processing WebSocket messages and dispatching them to the appropriate backend.
+
+# Request
+
+A Request represents a single WebSocket message. It encapsulates the data and metadata of a WebSocket message that is to be processed by the dispatcher and backend.
+
+To allow integration with the dispatcher and backend abstractions, the request structure should implement the wasabi.Request interface. This interface ensures that the request has the necessary methods for handling and processing.
+
+- `Context`: This method returns the context of the request. It can be used to carry request-scoped values, cancellation signals, and deadlines across API boundaries and between processes.
+- `Data`: This method returns the data of the WebSocket message. This is the actual content of the message that needs to be processed.
+- `RoutingKey`: This method returns the routing key that will be used for routing the message to the correct backend.
+- `WithContext(ctx context.Context)`: This method is used to assign an adjusted context to the request. It's useful when you want to propagate a new derived context to the request.
+
+Here's an example of a custom request structure that implements the wasabi.Request interface:
+
+```golang
+type MyRequest struct {
+    ctx context.Context
+    msgType wasabi.MessageType
+    data []byte
+    routingKey string
+}
+
+func (r *MyRequest) Context() context.Context {
+    return r.ctx
+}
+
+func (r *MyRequest) Data() []byte {
+    return r.data
+}
+
+func (r *MyRequest) RoutingKey() string {
+    return r.routingKey
+}
+
+func (r *MyRequest) WithContext(ctx context.Context) wasabi.Request {
+    r.ctx = ctx
+    return r
+}
+```
+
+In this example, `MyRequest` implements the `wasabi.Request` interface. It can now be used with the dispatcher and backend abstractions to process WebSocket messages.
 
 ### Backend 
 
