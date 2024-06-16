@@ -152,7 +152,9 @@ A Channel represents an endpoint for WebSocket connections. It's responsible for
 When a new channel is created with `channel.NewChannel`, it's initialized with a path, a dispatcher, and a connection registry. The path is the URL path that the channel will handle. The dispatcher is used to process incoming WebSocket messages, and the connection registry is used to manage active WebSocket connections.
 
 ```golang
-channel := channel.NewChannel("/chat", dispatcher, connRegistry)
+import "github.com/ksysoev/wasabi/channel"
+
+chatChan := channel.NewChannel("/chat", dispatcher, connRegistry)
 ```
 
 In this example, a new channel is created to handle WebSocket connections on the `/chat` path.
@@ -160,7 +162,7 @@ In this example, a new channel is created to handle WebSocket connections on the
 Channels are added to a server with `server.AddChannel`. The server will dispatch incoming WebSocket requests to the appropriate channel based on the request path.
 
 ```golang
-server.AddChannel(channel)
+server.AddChannel(chatChan)
 ```
 
 In this example, the channel is added to the server. Any incoming WebSocket requests on the `/chat` path will be handled by this channel.
@@ -174,13 +176,57 @@ A Dispatcher acts as a router for incoming WebSocket messages. It uses middlewar
 When a new dispatcher is created with `dispatcher.NewRouterDispatcher`, it's initialized with a default backend and request parser. The backend is the handler for WebSocket messages. Once a message has been processed by the dispatcher and any middleware, it's sent to the backend for further processing.
 
 ```golang
-dispatcher := dispatcher.NewRouterDispatcher(
-    backend, 
+import "github.com/ksysoev/wasabi/dispatcher"
+
+chatDipatcher := dispatcher.NewRouterDispatcher(
+    myBackend, 
     func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(ctx, msgType, data)
     },
 )
 ```
+
+In this example, a new dispatcher is created with a custom backend that is stored in `myBackend` variable. The second argument is the request parser that accepts WebSocket messages and returns Request.
+
+The router dispatcher allows to routing of incoming WebSocket messages to the desired backend, to add additional backends to the created dispatcher you can use `channel.AddBackend` method:
+
+```golang
+chatDipatcher.AddBackend(myNotificationBackend, []string{"notifications", "subscriptions"})
+```
+
+In this example, we're adding a backend to the chatDispatcher. The backend is named myNotificationBackend and it's being associated with two routing keys: "notifications" and "subscriptions".
+
+The dispatcher is responsible for processing WebSocket messages and dispatching them to the appropriate backend.
+
+### Backend 
+
+A Backend is the handler for WebSocket messages. After a message has been processed by the dispatcher and any middleware, it's forwarded to the backend for further processing.
+
+To integrate a backend with the dispatcher, it should implement the `wasabi.RequestHandler` interface. This interface ensures that the backend has the necessary method for handling requests.
+
+Wasabi provides several predefined backends that can be used directly:
+
+- **HTTP backend**: This backend is designed for integration with HTTP application servers. It allows WebSocket messages to be processed and responded to using standard HTTP request handling.
+- **WebSocket backend**: This backend is designed for integration with WebSocket applications. It provides a direct interface for processing WebSocket messages.
+- **Queue backend**: This backend is designed for integration with backend applications via queue systems like RabbitMQ, Redis, Kafka, etc. It allows WebSocket messages to be processed asynchronously and in a distributed manner.
+
+Here's an example of creating an HTTP backend:
+
+```golang
+backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
+    httpReq, err := http.NewRequest("POST", "http://localhost:8081/", bytes.NewBuffer(req.Data()))
+    if err != nil {
+        return nil, err
+    }
+
+    return httpReq, nil
+})
+```
+
+In this code example, we're creating an HTTP backend to integrate with our application service. The backend takes a WebSocket request, creates a new HTTP request with the same data, and returns the HTTP request for further processing.
+
+
+
 
 ## Contributing
 
