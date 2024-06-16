@@ -307,6 +307,45 @@ backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 
 In this code example, we're creating an HTTP backend to integrate with our application service. The backend takes a WebSocket request, creates a new HTTP request with the same data, and returns the HTTP request for further processing.
 
+### Middleware
+
+Middleware in Wasabi provides a way to perform additional processing on HTTP requests and WebSocket messages. There are two types of middleware: HTTP Middleware and Request Middleware.
+
+#### HTTP Middleware
+
+HTTP Middleware is applied to HTTP requests that are used to establish WebSocket connections. This type of middleware is useful when you need to apply connection-wide values or handle HTTP headers.
+
+For example, you might use HTTP Middleware to process the Authorization header and authenticate the client before establishing a WebSocket connection.
+
+#### Request Middleware
+
+Request Middleware is applied at the WebSocket message level. This type of middleware is useful when you need to apply logic that is related to WebSocket requests.
+
+For example, you might use Request Middleware to validate the data in WebSocket messages or to transform the data before it's processed by the backend.
+
+Here's an example of how to add HTTP Middleware and Request Middleware to a channel:
+
+```golang
+import (
+    "github.com/ksysoev/wasabi/channel"
+    "github.com/ksysoev/wasabi/dispatcher"
+    "github.com/ksysoev/wasabi/middleware/http"
+    "github.com/ksysoev/wasabi/middleware/request"
+)
+
+// Example for HTTP midleware
+ClientIPHandler := http.NewClientIPMiddleware(http.Cloudflare)
+myChan.Use(ClientIPHandler)
+
+// Example for Request middleware
+ErrHandler := request.NewErrorHandlingMiddleware(func(conn wasabi.Connection, req wasabi.Request, err error) error {
+    conn.Send(wasabi.MsgTypeTex, []byte("Failed to process request: " + err.Error()))
+    return nil
+})
+myDispatch.Use(ErrHandler)
+```
+
+In this example, ClientIPHandler is an HTTP middleware that extracts the client's IP address from the HTTP headers. ErrHandler is a Request middleware that handles errors during the processing of WebSocket messages. Both middleware are added to their respective handlers using the Use method.
 
 ## Contributing
 
