@@ -69,8 +69,8 @@ func main() {
 
     // We create a new dispatcher with dispatch.NewPipeDispatcher. 
     // This dispatcher sends/routes each incoming WebSocket message to the backend.
-    dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
-		return dispatch.NewRawRequest(conn.Context(), msgType, data)
+    dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
     
     dispatcher.Use(ErrHandler)
@@ -168,6 +168,19 @@ In this example, the channel is added to the server. Any incoming WebSocket requ
 The channel is a crucial part of the WebSocket service. It's responsible for managing WebSocket connections and processing WebSocket messages for a specific path.
 
 ### Dispatcher
+
+A Dispatcher acts as a router for incoming WebSocket messages. It uses middleware to process messages and dispatches them to the appropriate backend.
+
+When a new dispatcher is created with `dispatcher.NewRouterDispatcher`, it's initialized with a default backend and request parser. The backend is the handler for WebSocket messages. Once a message has been processed by the dispatcher and any middleware, it's sent to the backend for further processing.
+
+```golang
+dispatcher := dispatcher.NewRouterDispatcher(
+    backend, 
+    func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+		return dispatch.NewRawRequest(ctx, msgType, data)
+    },
+)
+```
 
 ## Contributing
 
