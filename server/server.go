@@ -9,17 +9,10 @@
 // The server uses custom read header and read timeouts, defined as constants.
 // These timeouts help to prevent slow client attacks by limiting the amount of time the server will wait for a client to send its request.
 //
-// The server also provides a custom error, ErrServerAlreadyRunning, which is returned when there's an attempt to start a server that's already running.
-//
 // Usage:
 //
-//	s := &server.Server{
-//	    baseCtx: context.Background(),
-//	    handler: &http.Server{
-//	        Addr: ":8080",
-//	        Handler: myHandler,
-//	    },
-//	}
+//	s := server.NewServer(":8080")
+//	s.AddChannel(channel.NewChannel("/path", handler))
 //	err := s.Start()
 //	if err != nil {
 //	    log.Fatal(err)
