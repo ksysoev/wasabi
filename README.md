@@ -120,6 +120,8 @@ The Server is the main component of the library. It listens for incoming HTTP re
 When a new server is created with `server.NewServer`, it's initialized with a port number. This is the port that the server will listen on for incoming HTTP requests.
 
 ```golang
+import "github.com/ksysoev/wasabi/server"
+
 server := server.NewServer(":8080")
 ```
 
@@ -143,8 +145,27 @@ In this example, if the server fails to start, the error is logged and the progr
 
 The server is a crucial part of the WebSocket service. It's responsible for managing the service's lifecycle and dispatching HTTP requests to the appropriate channels.
 
-
 ### Channel
+
+A Channel represents an endpoint for WebSocket connections. It's responsible for handling all WebSocket connections and messages for a specific path.
+
+When a new channel is created with `channel.NewChannel`, it's initialized with a path, a dispatcher, and a connection registry. The path is the URL path that the channel will handle. The dispatcher is used to process incoming WebSocket messages, and the connection registry is used to manage active WebSocket connections.
+
+```golang
+channel := channel.NewChannel("/chat", dispatcher, connRegistry)
+```
+
+In this example, a new channel is created to handle WebSocket connections on the `/chat` path.
+
+Channels are added to a server with `server.AddChannel`. The server will dispatch incoming WebSocket requests to the appropriate channel based on the request path.
+
+```golang
+server.AddChannel(channel)
+```
+
+In this example, the channel is added to the server. Any incoming WebSocket requests on the `/chat` path will be handled by this channel.
+
+The channel is a crucial part of the WebSocket service. It's responsible for managing WebSocket connections and processing WebSocket messages for a specific path.
 
 ### Dispatcher
 
