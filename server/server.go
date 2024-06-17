@@ -23,6 +23,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -41,6 +42,8 @@ const (
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
+	certPath     string
+	keyPath      string
 	baseCtx      context.Context
 	listener     net.Listener
 	listenerLock *sync.Mutex
@@ -135,7 +138,11 @@ func (s *Server) Run() (err error) {
 		close(s.ready)
 	}
 
-	err = s.handler.Serve(s.listener)
+	if s.certPath != "" && s.keyPath != "" {
+		err = s.handler.ServeTLS(s.listener, s.certPath, s.keyPath)
+	} else {
+		err = s.handler.Serve(s.listener)
+	}
 
 	if err != nil && err != http.ErrServerClosed {
 		return err
@@ -205,5 +212,20 @@ func WithBaseContext(ctx context.Context) Option {
 
 	return func(s *Server) {
 		s.baseCtx = ctx
+	}
+}
+
+// WithTLS is an option function that configures the server to use TLS (Transport Layer Security).
+// It sets the certificate and key file paths, and optionally allows custom TLS configuration.
+// The certificate and key file paths must be provided as arguments.
+// If a custom TLS configuration is provided, it will be applied to the server's handler.
+func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
+	return func(s *Server) {
+		s.certPath = certFile
+		s.keyPath = keyFile
+
+		if len(config) > 0 {
+			s.handler.TLSConfig = config[0]
+		}
 	}
 }
