@@ -52,6 +52,7 @@ type Server struct {
 	ready        chan<- struct{}
 	addr         string
 	channels     []wasabi.Channel
+	pprofEnabled bool
 }
 
 type Option func(*Server)
@@ -119,6 +120,11 @@ func (s *Server) Run() (err error) {
 			channel.Path(),
 			channel.Handler(),
 		)
+	}
+
+	if s.pprofEnabled {
+		slog.Info("Profiler endpoint enabled on /debug/pprof/")
+		mux.Handle("/debug/pprof/", http.DefaultServeMux)
 	}
 
 	s.handler.Handler = mux
@@ -227,5 +233,14 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 		if len(config) > 0 {
 			s.handler.TLSConfig = config[0]
 		}
+	}
+}
+
+// WithProfilerEndpoint is an option function that enables the profiler endpoint for the server.
+// Enabling the profiler endpoint allows profiling and performance monitoring of the server.
+// The profiler endpoint is available at /debug/pprof/.
+func WithProfilerEndpoint() Option {
+	return func(s *Server) {
+		s.pprofEnabled = true
 	}
 }

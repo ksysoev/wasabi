@@ -317,3 +317,37 @@ func TestServer_WithTLS(t *testing.T) {
 		t.Errorf("Got unexpected error: %v", err)
 	}
 }
+
+func TestServer_WithProfilerEndpoint(t *testing.T) {
+	ready := make(chan struct{})
+	// Create a new Server instance
+	server := NewServer(":0", WithReadinessChan(ready))
+
+	// Check if the profiler endpoint is disabled by default
+	if server.pprofEnabled {
+		t.Error("Expected profiler endpoint to be disabled")
+	}
+
+	// Apply the WithProfilerEndpoint option
+	WithProfilerEndpoint()(server)
+
+	// Check if the profiler endpoint is enabled
+	if !server.pprofEnabled {
+		t.Error("Expected profiler endpoint to be enabled")
+	}
+
+	go func() {
+		err := server.Run()
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+	}()
+
+	defer server.Close()
+
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
+	}
+}
