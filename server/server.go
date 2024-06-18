@@ -123,6 +123,7 @@ func (s *Server) Run() (err error) {
 	}
 
 	if s.pprofEnabled {
+		slog.Info("Profiler endpoint enabled on /debug/pprof/")
 		mux.Handle("/debug/pprof/", http.DefaultServeMux)
 	}
 
