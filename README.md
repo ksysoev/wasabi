@@ -239,7 +239,7 @@ In this example, we're adding a backend to the chatDispatcher. The backend is na
 
 The dispatcher is responsible for processing WebSocket messages and dispatching them to the appropriate backend.
 
-# Request
+### Request
 
 A Request represents a single WebSocket message. It encapsulates the data and metadata of a WebSocket message that is to be processed by the dispatcher and backend.
 
