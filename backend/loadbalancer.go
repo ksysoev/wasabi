@@ -9,26 +9,28 @@ import (
 
 var ErrNotEnoughBackends = fmt.Errorf("load balancer requires at least 2 backends")
 
-type BackendNode struct {
+const minRequiredBackends = 2
+
+type LoadBalancerNode struct {
 	backend wasabi.RequestHandler
 	counter atomic.Int32
 }
 
 type LoadBalancer struct {
-	backends []*BackendNode
+	backends []*LoadBalancerNode
 }
 
 // NewLoadBalancer creates a new instance of LoadBalancer with the given backends.
 // It takes a slice of RequestHandler as a parameter and returns a new instance of LoadBalancer.
 func NewLoadBalancer(backends []wasabi.RequestHandler) (*LoadBalancer, error) {
-	if len(backends) < 2 {
+	if len(backends) < minRequiredBackends {
 		return nil, ErrNotEnoughBackends
 	}
 
-	nodes := make([]*BackendNode, len(backends))
+	nodes := make([]*LoadBalancerNode, len(backends))
 
 	for i, backend := range backends {
-		nodes[i] = &BackendNode{
+		nodes[i] = &LoadBalancerNode{
 			backend: backend,
 			counter: atomic.Int32{},
 		}
@@ -52,7 +54,7 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 
 // getLeastBusyNode returns the least busy backend node.
 // It returns the least busy backend node.
-func (lb *LoadBalancer) getLeastBusyNode() *BackendNode {
+func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
 	minRequests := lb.backends[0].counter.Load()
 	minBackend := lb.backends[0]
 

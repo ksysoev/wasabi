@@ -18,6 +18,7 @@ func TestNewLoadBalancer(t *testing.T) {
 	}
 
 	backends = append(backends, mocks.NewMockBackend(t))
+
 	lb, err := NewLoadBalancer(backends)
 	if err != nil {
 		t.Fatalf("Failed to create load balancer: %v", err)
@@ -31,6 +32,7 @@ func TestNewLoadBalancer(t *testing.T) {
 		if backend.backend != backends[i] {
 			t.Errorf("Expected backend at index %d to be %v, but got %v", i, backends[i], backend.backend)
 		}
+
 		if backend.counter.Load() != 0 {
 			t.Errorf("Expected backend counter at index %d to be 0, but got %d", i, backend.counter.Load())
 		}
@@ -68,6 +70,7 @@ func TestLoadBalancer_Handle(t *testing.T) {
 		mocks.NewMockBackend(t),
 		mocks.NewMockBackend(t),
 	}
+
 	lb, err := NewLoadBalancer(backends)
 	if err != nil {
 		t.Fatalf("Failed to create load balancer: %v", err)
