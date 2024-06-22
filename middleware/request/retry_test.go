@@ -33,14 +33,13 @@ func TestNewRetryMiddleware(t *testing.T) {
 	mockHandlerSuccess := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 		return nil
 	})
-	err := middleware(mockHandlerSuccess).Handle(mockConn, mockReq)
-	if err != nil {
+
+	if err := middleware(mockHandlerSuccess).Handle(mockConn, mockReq); err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}
 
 	// Test with failed request
-	err = middleware(mockHandler).Handle(mockConn, mockReq)
-	if err == nil {
+	if err := middleware(mockHandler).Handle(mockConn, mockReq); err == nil {
 		t.Error("Expected error, but got nil")
 	}
 }
