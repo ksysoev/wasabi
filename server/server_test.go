@@ -290,7 +290,7 @@ func TestServer_Addr(t *testing.T) {
 }
 func TestServer_WithTLS(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(":0")
+	server := NewServer(":0", DefaultServerConfig)
 	// Set TLS configuration using WithTLS
 	certPath := "/path/to/cert.pem"
 	keyPath := "/path/to/key.pem"
@@ -329,7 +329,7 @@ func TestServer_WithTLS(t *testing.T) {
 func TestServer_WithProfilerEndpoint(t *testing.T) {
 	ready := make(chan struct{})
 	// Create a new Server instance
-	server := NewServer(":0", WithReadinessChan(ready))
+	server := NewServer(":0", DefaultServerConfig, WithReadinessChan(ready))
 
 	// Check if the profiler endpoint is disabled by default
 	if server.pprofEnabled {
