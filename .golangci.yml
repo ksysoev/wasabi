@@ -65,3 +65,6 @@ issues:
 
 run:
   issues-exit-code: 1
+
+severity:
+  default-severity: error
