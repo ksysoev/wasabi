@@ -30,7 +30,7 @@ func main() {
 	})
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
-	server := server.NewServer(Addr, server.WithBaseContext(context.Background()), server.WithProfilerEndpoint())
+	server := server.NewServer(Addr, server.DefaultServerConfig, server.WithBaseContext(context.Background()), server.WithProfilerEndpoint())
 
 	server.AddChannel(channel)
 
