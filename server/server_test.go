@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ type testCtxKey string
 
 func TestNewServer(t *testing.T) {
 	addr := ":8080"
-	server := NewServer(addr)
+	server := NewServer(addr, DefaultServerConfig)
 
 	if server.addr != addr {
 		t.Errorf("Expected port %s, but got %s", addr, server.addr)
@@ -28,7 +29,7 @@ func TestNewServer(t *testing.T) {
 		t.Error("Expected non-nil mutex")
 	}
 
-	server = NewServer("")
+	server = NewServer("", DefaultServerConfig)
 
 	if server.addr != ":http" {
 		t.Errorf("Expected default port :http, but got %s", server.addr)
@@ -36,7 +37,7 @@ func TestNewServer(t *testing.T) {
 }
 func TestServer_AddChannel(t *testing.T) {
 	// Create a new Server instance
-	server := NewServer(":0")
+	server := NewServer(":0", DefaultServerConfig)
 
 	// Create a new channel
 	channel := mocks.NewMockChannel(t)
@@ -59,7 +60,7 @@ func TestServer_WithBaseContext(t *testing.T) {
 	// Create a new Server instance with a base context
 	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
 
-	server := NewServer(":0", WithBaseContext(ctx))
+	server := NewServer(":0", DefaultServerConfig, WithBaseContext(ctx))
 
 	// Check if the base context was set correctly
 	if server.baseCtx == nil {
@@ -69,12 +70,17 @@ func TestServer_WithBaseContext(t *testing.T) {
 	if server.baseCtx.Value(testCtxKey("test")) != "test" {
 		t.Errorf("Expected context value 'test', but got '%s'", server.baseCtx.Value("test"))
 	}
+
+	// Check that server config is part of context
+	if server.baseCtx.Value(reflect.TypeFor[ServerConfig]()) != DefaultServerConfig {
+		t.Errorf("Expected context to key value ServerConfig with value '%s' but got '%s'", DefaultServerConfig, server.baseCtx.Value(reflect.TypeFor[ServerConfig]()))
+	}
 }
 
 func TestServer_WithReadinessChan(t *testing.T) {
 	// Create a new Server instance with a base context
 	ready := make(chan struct{})
-	server := NewServer(":0", WithReadinessChan(ready))
+	server := NewServer(":0", DefaultServerConfig, WithReadinessChan(ready))
 
 	if server.ready == nil {
 		t.Error("Expected non-nil channel")
@@ -94,7 +100,7 @@ func TestServer_Run(t *testing.T) {
 		t.Run(fmt.Sprintf("%d times of calling Run", run), func(t *testing.T) {
 			// Create a new Server instance
 			ready := make(chan struct{})
-			server := NewServer(":0", WithReadinessChan(ready))
+			server := NewServer(":0", DefaultServerConfig, WithReadinessChan(ready))
 
 			channel := mocks.NewMockChannel(t)
 			channel.EXPECT().Path().Return("/test")
@@ -147,7 +153,7 @@ func TestServer_Run(t *testing.T) {
 func TestServer_Close(t *testing.T) {
 	// Create a new Server instance
 	ready := make(chan struct{})
-	server := NewServer(":0", WithReadinessChan(ready))
+	server := NewServer(":0", DefaultServerConfig, WithReadinessChan(ready))
 
 	// Create a context with a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -197,7 +203,7 @@ func TestServer_Close(t *testing.T) {
 func TestServer_Close_NoContext(t *testing.T) {
 	// Create a new Server instance
 	ready := make(chan struct{})
-	server := NewServer(":0", WithReadinessChan(ready))
+	server := NewServer(":0", DefaultServerConfig, WithReadinessChan(ready))
 
 	// Create a mock channel
 	channel := mocks.NewMockChannel(t)
@@ -244,7 +250,7 @@ func TestServer_Addr(t *testing.T) {
 	// Create a new Server instance
 	done := make(chan struct{})
 
-	server := NewServer(":0", WithReadinessChan(done))
+	server := NewServer(":0", DefaultServerConfig, WithReadinessChan(done))
 
 	defer server.Close()
 

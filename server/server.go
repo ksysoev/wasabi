@@ -5,16 +5,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"reflect"
 	"sync"
-	"time"
 
 	"github.com/ksysoev/wasabi"
 	"golang.org/x/exp/slog"
-)
-
-const (
-	ReadHeaderTimeout = 3 * time.Second
-	ReadTimeout       = 30 * time.Second
 )
 
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
@@ -44,7 +39,7 @@ func WithReadinessChan(ch chan<- struct{}) Option {
 // NewServer creates new instance of Wasabi server
 // port - port to listen on
 // returns new instance of Server
-func NewServer(addr string, opts ...Option) *Server {
+func NewServer(addr string, serverConfig ServerConfig, opts ...Option) *Server {
 	if addr == "" {
 		addr = ":http"
 	}
@@ -63,14 +58,20 @@ func NewServer(addr string, opts ...Option) *Server {
 
 	server.handler = &http.Server{
 		Addr:              addr,
-		ReadHeaderTimeout: ReadHeaderTimeout,
-		ReadTimeout:       ReadTimeout,
+		ReadHeaderTimeout: serverConfig.ReadHeaderTimeout,
+		ReadTimeout:       serverConfig.ReadTimeout,
 		BaseContext: func(_ net.Listener) context.Context {
 			return server.baseCtx
 		},
 	}
 
+	server.ApplyServerConfig(serverConfig)
 	return server
+}
+
+// Applies the ServerConfig as a value in the baseCtx of the server
+func (s *Server) ApplyServerConfig(serverConfig ServerConfig) {
+	s.baseCtx = context.WithValue(s.baseCtx, reflect.TypeOf(serverConfig), serverConfig)
 }
 
 // AddChannel adds new channel to server
