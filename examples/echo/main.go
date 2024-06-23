@@ -25,12 +25,14 @@ func main() {
 		return conn.Send(wasabi.MsgTypeText, req.Data())
 	})
 
+	//TODO: type check conn.Context() as Wasabi Context
+
 	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)
 	})
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
-	server := server.NewServer(Addr, server.WithBaseContext(server.NewWasabiDefaultContext(context.Background())))
+	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
 	server.AddChannel(channel)
 
 	if err := server.Run(); err != nil {
