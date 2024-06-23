@@ -239,6 +239,12 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 // WithProfilerEndpoint is an option function that enables the profiler endpoint for the server.
 // Enabling the profiler endpoint allows profiling and performance monitoring of the server.
 // The profiler endpoint is available at /debug/pprof/.
+// To use the profiler endpoint, import the net/http/pprof package in your application.
+// Example:
+//
+//	import _ "net/http/pprof"
+//
+// The profiler endpoint is disabled by default.
 func WithProfilerEndpoint() Option {
 	return func(s *Server) {
 		s.pprofEnabled = true
