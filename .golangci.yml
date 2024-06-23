@@ -22,6 +22,16 @@ linters-settings:
     require-specific: true
 
 linters:
+  linters-settings:
+  revive:
+    rules:
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#exported
+      - name: exported
+        severity: error
+        disabled: false
+        exclude: [""]
+        arguments:
+          - "disableStutteringCheck"
   disable-all: true
   enable:
     - bodyclose
@@ -65,14 +75,3 @@ issues:
 
 run:
   issues-exit-code: 1
-
-linters-settings:
-  revive:
-    rules:
-      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#exported
-      - name: exported
-        severity: warning
-        disabled: false
-        exclude: [""]
-        arguments:
-          - "disableStutteringCheck"
