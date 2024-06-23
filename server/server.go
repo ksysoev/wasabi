@@ -91,6 +91,7 @@ func NewServer(addr string, serverConfig ServerConfig, opts ...Option) *Server {
 	}
 
 	server.ApplyServerConfig(serverConfig)
+
 	return server
 }
 
