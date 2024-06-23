@@ -10,6 +10,10 @@ type ServerConfig struct {
 }
 
 var DefaultServerConfig = ServerConfig{
-	ReadHeaderTimeout: 3 * time.Second,
-	ReadTimeout:       30 * time.Second,
+	ReadHeaderTimeout: ReadHeaderTimeoutSeconds * time.Second,
+	ReadTimeout:       ReadTimeoutSeconds * time.Second,
 }
+
+const ReadHeaderTimeoutSeconds = 3
+
+const ReadTimeoutSeconds = 30
