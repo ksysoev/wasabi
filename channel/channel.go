@@ -18,7 +18,9 @@ type Channel struct {
 }
 
 type channelConfig struct {
-	originPatterns []string
+	originPatterns       []string
+	compressionMode      websocket.CompressionMode
+	compressionThreshold int
 }
 
 type Option func(*channelConfig)
@@ -36,7 +38,9 @@ func NewChannel(
 	opts ...Option,
 ) *Channel {
 	config := channelConfig{
-		originPatterns: []string{"*"},
+		originPatterns:       []string{"*"},
+		compressionMode:      websocket.CompressionDisabled,
+		compressionThreshold: 0,
 	}
 
 	for _, opt := range opts {
@@ -73,7 +77,9 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 		}
 
 		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-			OriginPatterns: c.config.originPatterns,
+			OriginPatterns:       c.config.originPatterns,
+			CompressionMode:      c.config.compressionMode,
+			CompressionThreshold: c.config.compressionThreshold,
 		})
 
 		if err != nil {
@@ -111,5 +117,15 @@ func (c *Channel) wrapMiddleware(handler http.Handler) http.Handler {
 func WithOriginPatterns(patterns ...string) Option {
 	return func(c *channelConfig) {
 		c.originPatterns = patterns
+	}
+}
+
+// WithCompressionMode sets the compression mode and threshold for a channel configuration.
+// The compression mode determines how the channel data will be compressed, and the threshold
+// specifies the minimum size of the payload required for compression to be applied.
+func WithCompressionMode(mode websocket.CompressionMode, threshold int) Option {
+	return func(c *channelConfig) {
+		c.compressionMode = mode
+		c.compressionThreshold = threshold
 	}
 }

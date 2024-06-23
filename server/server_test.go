@@ -2,11 +2,16 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
+	"os"
 	"testing"
 	"time"
+
+	_ "net/http/pprof" //nolint:gosec // pprof is used for testing profile endpoint
 
 	"github.com/ksysoev/wasabi/mocks"
 )
@@ -281,5 +286,89 @@ func TestServer_Addr(t *testing.T) {
 
 	if addr == nil {
 		t.Error("Expected non-empty address")
+	}
+}
+func TestServer_WithTLS(t *testing.T) {
+	// Create a new Server instance
+	server := NewServer(":0")
+	// Set TLS configuration using WithTLS
+	certPath := "/path/to/cert.pem"
+	keyPath := "/path/to/key.pem"
+
+	// #nosec G402 - InsecureSkipVerify is used for testing purposes
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	WithTLS(certPath, keyPath, tlsConfig)(server)
+
+	// Check if the certificate and key paths are set correctly
+	if server.certPath != certPath {
+		t.Errorf("Expected certificate path %s, but got %s", certPath, server.certPath)
+	}
+
+	if server.keyPath != keyPath {
+		t.Errorf("Expected key path %s, but got %s", keyPath, server.keyPath)
+	}
+
+	// Check if the TLS configuration is set correctly
+	if server.handler.TLSConfig == nil {
+		t.Error("Expected non-nil TLS configuration")
+	}
+
+	if server.handler.TLSConfig.InsecureSkipVerify != true {
+		t.Error("Expected InsecureSkipVerify to be true")
+	}
+
+	err := server.Run()
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Got unexpected error: %v", err)
+	}
+}
+
+func TestServer_WithProfilerEndpoint(t *testing.T) {
+	ready := make(chan struct{})
+	// Create a new Server instance
+	server := NewServer(":0", WithReadinessChan(ready))
+
+	// Check if the profiler endpoint is disabled by default
+	if server.pprofEnabled {
+		t.Error("Expected profiler endpoint to be disabled")
+	}
+
+	// Apply the WithProfilerEndpoint option
+	WithProfilerEndpoint()(server)
+
+	// Check if the profiler endpoint is enabled
+	if !server.pprofEnabled {
+		t.Error("Expected profiler endpoint to be enabled")
+	}
+
+	go func() {
+		err := server.Run()
+		if err != nil {
+			t.Errorf("Got unexpected error: %v", err)
+		}
+	}()
+
+	defer server.Close()
+
+	select {
+	case <-ready:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected server to start")
+	}
+
+	// Check if the profiler endpoint is enabled
+	resp, err := http.Get("http://" + server.Addr().String() + "/debug/pprof/")
+
+	if err != nil {
+		t.Errorf("Got unexpected error: %v", err)
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code 200, but got %d", resp.StatusCode)
 	}
 }

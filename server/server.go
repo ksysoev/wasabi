@@ -1,7 +1,29 @@
+// Package server provides a HTTP server with custom timeouts and error handling.
+//
+// This package is designed to be used with the wasabi package for handling HTTP requests.
+// It provides a Server struct that wraps the standard http.Server with additional functionality.
+//
+// The Server struct includes a base context, a net.Listener for accepting connections, and a mutex for thread safety.
+// It also includes a ready channel that can be used to signal when the server is ready to accept connections.
+//
+// The server uses custom read header and read timeouts, defined as constants.
+// These timeouts help to prevent slow client attacks by limiting the amount of time the server will wait for a client to send its request.
+//
+// Usage:
+//
+//	s := server.NewServer(":8080")
+//	s.AddChannel(channel.NewChannel("/path", handler))
+//	err := s.Start()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//
+// This will start a new server on port 8080 with the provided handler.
 package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,6 +37,8 @@ import (
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
+	certPath     string
+	keyPath      string
 	baseCtx      context.Context
 	listener     net.Listener
 	listenerLock *sync.Mutex
@@ -23,6 +47,7 @@ type Server struct {
 	ready        chan<- struct{}
 	addr         string
 	channels     []wasabi.Channel
+	pprofEnabled bool
 }
 
 type Option func(*Server)
@@ -98,6 +123,11 @@ func (s *Server) Run() (err error) {
 		)
 	}
 
+	if s.pprofEnabled {
+		slog.Info("Profiler endpoint enabled on /debug/pprof/")
+		mux.Handle("/debug/pprof/", http.DefaultServeMux)
+	}
+
 	s.handler.Handler = mux
 
 	s.listenerLock.Lock()
@@ -115,7 +145,11 @@ func (s *Server) Run() (err error) {
 		close(s.ready)
 	}
 
-	err = s.handler.Serve(s.listener)
+	if s.certPath != "" && s.keyPath != "" {
+		err = s.handler.ServeTLS(s.listener, s.certPath, s.keyPath)
+	} else {
+		err = s.handler.Serve(s.listener)
+	}
 
 	if err != nil && err != http.ErrServerClosed {
 		return err
@@ -185,5 +219,35 @@ func WithBaseContext(ctx context.Context) Option {
 
 	return func(s *Server) {
 		s.baseCtx = ctx
+	}
+}
+
+// WithTLS is an option function that configures the server to use TLS (Transport Layer Security).
+// It sets the certificate and key file paths, and optionally allows custom TLS configuration.
+// The certificate and key file paths must be provided as arguments.
+// If a custom TLS configuration is provided, it will be applied to the server's handler.
+func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
+	return func(s *Server) {
+		s.certPath = certFile
+		s.keyPath = keyFile
+
+		if len(config) > 0 {
+			s.handler.TLSConfig = config[0]
+		}
+	}
+}
+
+// WithProfilerEndpoint is an option function that enables the profiler endpoint for the server.
+// Enabling the profiler endpoint allows profiling and performance monitoring of the server.
+// The profiler endpoint is available at /debug/pprof/.
+// To use the profiler endpoint, import the net/http/pprof package in your application.
+// Example:
+//
+//	import _ "net/http/pprof"
+//
+// The profiler endpoint is disabled by default.
+func WithProfilerEndpoint() Option {
+	return func(s *Server) {
+		s.pprofEnabled = true
 	}
 }
