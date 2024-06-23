@@ -66,5 +66,13 @@ issues:
 run:
   issues-exit-code: 1
 
-severity:
-  default-severity: error
+linters-settings:
+  revive:
+    rules:
+      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#exported
+      - name: exported
+        severity: warning
+        disabled: false
+        exclude: [""]
+        arguments:
+          - "disableStutteringCheck"
