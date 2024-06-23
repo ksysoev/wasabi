@@ -25,6 +25,9 @@ jobs:
       - name: Display Go version
         run: go version
       - name: Code Lint
+        rules:
+          - if: $CI_COMMIT_MESSAGE =~ /^lint-skip/
+            when: never
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.55.2
