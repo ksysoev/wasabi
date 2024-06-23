@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	_ "net/http/pprof" //nolint:gosec // pprof is used for testing profile endpoint
+
 	"github.com/ksysoev/wasabi/mocks"
 )
 
@@ -349,5 +351,18 @@ func TestServer_WithProfilerEndpoint(t *testing.T) {
 	case <-ready:
 	case <-time.After(1 * time.Second):
 		t.Error("Expected server to start")
+	}
+
+	// Check if the profiler endpoint is enabled
+	resp, err := http.Get("http://" + server.Addr().String() + "/debug/pprof/")
+
+	if err != nil {
+		t.Errorf("Got unexpected error: %v", err)
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code 200, but got %d", resp.StatusCode)
 	}
 }
