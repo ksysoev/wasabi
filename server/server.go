@@ -225,7 +225,8 @@ func WithBaseContext(ctx context.Context) Option {
 	}
 
 	return func(s *Server) {
-		s.baseCtx = ctx
+		config := s.GetServerConfig()
+		s.baseCtx = context.WithValue(ctx, ctxConfigKey{}, config)
 	}
 }
 

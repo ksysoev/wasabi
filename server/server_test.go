@@ -119,6 +119,39 @@ func TestServer_WithDefaultConfig(t *testing.T) {
 	}
 }
 
+func TestServer_WithBaseContextAndConfig(t *testing.T) {
+	serverConfig := Config {
+		ReadHeaderTimeout: 2 * time.Second,
+		ReadTimeout: 20 * time.Second,
+	}
+	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
+
+	// Create 2 servers with different order of optional methods
+	server1 := NewServer(":0", WithBaseContext(ctx), WithServerConfig(serverConfig))
+	server2 := NewServer(":1", WithServerConfig(serverConfig), WithBaseContext(ctx))
+
+	// Check if the base context was set correctly
+	if server1.baseCtx == nil || server2.baseCtx == nil {
+		t.Error("Expected non-nil base contexts for both servers")
+	}
+
+	if server1.baseCtx.Value(testCtxKey("test")) != "test" {
+		t.Errorf("Expected context value 'test', but got '%s'", server1.baseCtx.Value("test"))
+	}
+
+	if server2.baseCtx.Value(testCtxKey("test")) != "test" {
+		t.Errorf("Expected context value 'test', but got '%s'", server2.baseCtx.Value("test"))
+	}
+
+	if (server1.GetServerConfig() != serverConfig) {
+		t.Errorf("Expected config for server1 to be %s but got %s", serverConfig, server1.GetServerConfig())
+	}
+
+	if (server2.GetServerConfig() != serverConfig) {
+		t.Errorf("Expected config for server2 to be %s but got %s", serverConfig, server2.GetServerConfig())
+	}
+}
+
 func TestServer_WithReadinessChan(t *testing.T) {
 	// Create a new Server instance with a base context
 	ready := make(chan struct{})
