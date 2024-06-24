@@ -259,7 +259,8 @@ func WithProfilerEndpoint() Option {
 	}
 }
 
-// TODO: add comment
+// WithServerConfig is an option function that overrides the default configuration settings of the server.
+// This can give the client more control over the server feature functions
 func WithServerConfig(config Config) Option {
 	return func(s *Server) {
 		s.baseCtx = context.WithValue(s.baseCtx, ctxConfigKey{}, config)
