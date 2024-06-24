@@ -1,6 +1,7 @@
 package request
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -43,9 +44,10 @@ func NewCircuitBreakerMiddleware(threshold uint32, period time.Duration) func(ne
 				return struct{}{}, nil
 			})
 			if err != nil {
-				if err == gobreaker.ErrOpenState {
+				if errors.Is(err, gobreaker.ErrOpenState) {
 					return ErrCircuitBreakerOpen
 				}
+
 				return err
 			}
 
