@@ -9,15 +9,8 @@ import (
 	"github.com/sony/gobreaker/v2"
 )
 
-type CircuitBreakerState uint8
-
 var (
 	ErrCircuitBreakerOpen = fmt.Errorf("circuit breaker is open")
-)
-
-const (
-	Closed CircuitBreakerState = iota
-	Open
 )
 
 // NewCircuitBreakerMiddleware creates a new circuit breaker middleware with the specified parameters.
@@ -50,6 +43,9 @@ func NewCircuitBreakerMiddleware(threshold uint32, period time.Duration) func(ne
 				return struct{}{}, nil
 			})
 			if err != nil {
+				if err == gobreaker.ErrOpenState {
+					return ErrCircuitBreakerOpen
+				}
 				return err
 			}
 

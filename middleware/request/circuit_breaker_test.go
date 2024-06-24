@@ -8,7 +8,6 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/dispatch"
 	"github.com/ksysoev/wasabi/mocks"
-	"github.com/sony/gobreaker/v2"
 )
 
 func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
@@ -73,12 +72,12 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != gobreaker.ErrOpenState && err != testError {
-				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
+			if err != ErrCircuitBreakerOpen && err != testError {
+				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
 				continue
 			}
 
-			if err == gobreaker.ErrOpenState {
+			if err == ErrCircuitBreakerOpen {
 				OpenErrorCount++
 			} else if err == testError {
 				TestErrorCount++
@@ -90,7 +89,7 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 1 {
-		t.Errorf("Expected 1 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 1 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
 	}
 
 	if TestErrorCount != 1 {
@@ -141,12 +140,12 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != gobreaker.ErrOpenState && err != nil {
-				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
+			if err != ErrCircuitBreakerOpen && err != nil {
+				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
 				continue
 			}
 
-			if err == gobreaker.ErrOpenState {
+			if err == ErrCircuitBreakerOpen {
 				OpenErrorCount++
 			} else if err == nil {
 				SuccessCount++
@@ -158,7 +157,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 1 {
-		t.Errorf("Expected 1 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 1 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
 	}
 
 	if SuccessCount != 1 {
@@ -179,12 +178,12 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != gobreaker.ErrOpenState && err != nil {
-				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
+			if err != ErrCircuitBreakerOpen && err != nil {
+				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
 				continue
 			}
 
-			if err == gobreaker.ErrOpenState {
+			if err == ErrCircuitBreakerOpen {
 				OpenErrorCount++
 			} else if err == nil {
 				SuccessCount++
@@ -196,7 +195,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 0 {
-		t.Errorf("Expected 0 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 0 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
 	}
 
 	if SuccessCount != 2 {
@@ -247,11 +246,11 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 
 	select {
 	case err := <-results:
-		if err != gobreaker.ErrOpenState && err != nil {
-			t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
+		if err != ErrCircuitBreakerOpen && err != nil {
+			t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
 		}
 
-		if err == gobreaker.ErrOpenState {
+		if err == ErrCircuitBreakerOpen {
 			OpenErrorCount++
 		} else if err == nil {
 			SuccessCount++
@@ -262,7 +261,7 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 	}
 
 	if OpenErrorCount != 0 {
-		t.Errorf("Expected 0 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 0 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
 	}
 
 	if SuccessCount != 1 {
