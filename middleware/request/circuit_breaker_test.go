@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
-	threshold := uint(3)
+	threshold := uint32(3)
 	period := time.Second
 
 	// Create a mock request handler
@@ -24,7 +24,7 @@ func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
 	middleware := NewCircuitBreakerMiddleware(threshold, period)(mockHandler)
 
 	// Test the Closed state
-	for i := uint(0); i < threshold+1; i++ {
+	for i := uint32(0); i < threshold+1; i++ {
 		err := middleware.Handle(mockConn, mockRequest)
 		if err != nil {
 			t.Errorf("Expected no error, but got %v", err)
@@ -33,7 +33,7 @@ func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
-	threshold := uint(1)
+	threshold := uint32(1)
 	period := time.Second
 
 	testError := fmt.Errorf("test error")
@@ -99,7 +99,7 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
-	threshold := uint(1)
+	threshold := uint32(1)
 	period := time.Second
 
 	testError := fmt.Errorf("test error")
@@ -205,7 +205,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
-	threshold := uint(2)
+	threshold := uint32(2)
 	period := 20 * time.Millisecond
 
 	testError := fmt.Errorf("test error")
@@ -226,7 +226,7 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 
 	// Bring the circuit breaker to the Open state
 
-	for i := uint(0); i < threshold; i++ {
+	for i := uint32(0); i < threshold; i++ {
 		if err := middleware.Handle(mockConn, mockRequest); err != testError {
 			t.Errorf("Expected error %v, but got %v", testError, err)
 		}

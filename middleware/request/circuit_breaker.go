@@ -31,11 +31,11 @@ const (
 // The `threshold` parameter specifies the maximum number of errors allowed within the time period.
 // The `period` parameter specifies the duration of the time period.
 // The returned function can be used as middleware in a Wasabi server.
-func NewCircuitBreakerMiddleware(threshold uint, period time.Duration) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+func NewCircuitBreakerMiddleware(threshold uint32, period time.Duration) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	var st gobreaker.Settings
 	st.Timeout = period
 	st.ReadyToTrip = func(counts gobreaker.Counts) bool {
-		return counts.ConsecutiveFailures >= uint32(threshold)
+		return counts.ConsecutiveFailures >= threshold
 	}
 	cb := gobreaker.NewCircuitBreaker[any](st)
 
