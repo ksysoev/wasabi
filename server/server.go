@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"reflect"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
@@ -52,6 +51,8 @@ type Server struct {
 
 type Option func(*Server)
 
+type ctxConfigKey struct{}
+
 // WithReadinessChan sets ch to [Server] and will be closed once the [Server] is
 // ready to accept connection. Typically used in testing after calling [Run]
 // method and waiting for ch to close, before continuing with test logics.
@@ -64,7 +65,7 @@ func WithReadinessChan(ch chan<- struct{}) Option {
 // NewServer creates new instance of Wasabi server
 // port - port to listen on
 // returns new instance of Server
-func NewServer(addr string, serverConfig ServerConfig, opts ...Option) *Server {
+func NewServer(addr string, opts ...Option) *Server {
 	if addr == "" {
 		addr = ":http"
 	}
@@ -81,6 +82,8 @@ func NewServer(addr string, serverConfig ServerConfig, opts ...Option) *Server {
 		opt(server)
 	}
 
+	serverConfig := server.GetServerConfig()
+
 	server.handler = &http.Server{
 		Addr:              addr,
 		ReadHeaderTimeout: serverConfig.ReadHeaderTimeout,
@@ -90,14 +93,17 @@ func NewServer(addr string, serverConfig ServerConfig, opts ...Option) *Server {
 		},
 	}
 
-	server.ApplyServerConfig(serverConfig)
-
 	return server
 }
 
-// Applies the ServerConfig as a value in the baseCtx of the server
-func (s *Server) ApplyServerConfig(serverConfig ServerConfig) {
-	s.baseCtx = context.WithValue(s.baseCtx, reflect.TypeOf(serverConfig), serverConfig)
+// Helper to fetch server config. Returns Default config if base ctx has no config set
+func (s *Server) GetServerConfig() Config {
+	config, ok := s.baseCtx.Value(ctxConfigKey{}).(Config)
+	if !ok {
+		return DefaultConfig
+	}
+
+	return config
 }
 
 // AddChannel adds new channel to server
@@ -250,5 +256,12 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 func WithProfilerEndpoint() Option {
 	return func(s *Server) {
 		s.pprofEnabled = true
+	}
+}
+
+// TODO: add comment
+func WithServerConfig(config Config) Option {
+	return func(s *Server) {
+		s.baseCtx = context.WithValue(s.baseCtx, ctxConfigKey{}, config)
 	}
 }

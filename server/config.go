@@ -4,12 +4,12 @@ import (
 	"time"
 )
 
-type ServerConfig struct {
+type Config struct {
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 }
 
-var DefaultServerConfig = ServerConfig{
+var DefaultConfig = Config{
 	ReadHeaderTimeout: ReadHeaderTimeoutSeconds * time.Second,
 	ReadTimeout:       ReadTimeoutSeconds * time.Second,
 }
