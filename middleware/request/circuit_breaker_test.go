@@ -247,7 +247,6 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 
 	select {
 	case err := <-results:
-		fmt.Println(err)
 		if err != gobreaker.ErrOpenState && err != nil {
 			t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
 		}

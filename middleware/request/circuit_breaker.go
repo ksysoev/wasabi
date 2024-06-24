@@ -46,13 +46,14 @@ func NewCircuitBreakerMiddleware(threshold uint, period time.Duration) func(next
 				if err != nil {
 					return nil, err
 				}
+
 				return struct{}{}, nil
 			})
 			if err != nil {
 				return err
 			}
+
 			return nil
 		})
 	}
-
 }
