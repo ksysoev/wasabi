@@ -120,9 +120,9 @@ func TestServer_WithDefaultConfig(t *testing.T) {
 }
 
 func TestServer_WithBaseContextAndConfig(t *testing.T) {
-	serverConfig := Config {
+	serverConfig := Config{
 		ReadHeaderTimeout: 2 * time.Second,
-		ReadTimeout: 20 * time.Second,
+		ReadTimeout:       20 * time.Second,
 	}
 	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
 
@@ -143,11 +143,11 @@ func TestServer_WithBaseContextAndConfig(t *testing.T) {
 		t.Errorf("Expected context value 'test', but got '%s'", server2.baseCtx.Value("test"))
 	}
 
-	if (server1.GetServerConfig() != serverConfig) {
+	if server1.GetServerConfig() != serverConfig {
 		t.Errorf("Expected config for server1 to be %s but got %s", serverConfig, server1.GetServerConfig())
 	}
 
-	if (server2.GetServerConfig() != serverConfig) {
+	if server2.GetServerConfig() != serverConfig {
 		t.Errorf("Expected config for server2 to be %s but got %s", serverConfig, server2.GetServerConfig())
 	}
 }
