@@ -8,12 +8,12 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/dispatch"
 	"github.com/ksysoev/wasabi/mocks"
+	"github.com/sony/gobreaker/v2"
 )
 
 func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
-	treshold := uint(3)
+	threshold := uint(3)
 	period := time.Second
-	recoverAfter := uint(1)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error { return nil })
@@ -21,10 +21,10 @@ func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 
 	// Create the circuit breaker middleware
-	middleware := NewCircuitBreakerMiddleware(treshold, period, recoverAfter)(mockHandler)
+	middleware := NewCircuitBreakerMiddleware(threshold, period)(mockHandler)
 
 	// Test the Closed state
-	for i := uint(0); i < treshold+1; i++ {
+	for i := uint(0); i < threshold+1; i++ {
 		err := middleware.Handle(mockConn, mockRequest)
 		if err != nil {
 			t.Errorf("Expected no error, but got %v", err)
@@ -33,9 +33,8 @@ func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
-	treshold := uint(1)
+	threshold := uint(1)
 	period := time.Second
-	recoverAfter := uint(1)
 
 	testError := fmt.Errorf("test error")
 
@@ -49,7 +48,7 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 
 	// Create the circuit breaker middleware
-	middleware := NewCircuitBreakerMiddleware(treshold, period, recoverAfter)(mockHandler)
+	middleware := NewCircuitBreakerMiddleware(threshold, period)(mockHandler)
 
 	// Bring the circuit breaker to the Open state
 	err := middleware.Handle(mockConn, mockRequest)
@@ -64,6 +63,8 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 		go func() {
 			results <- middleware.Handle(mockConn, mockRequest)
 		}()
+		// Wait out circuit break to change state
+		time.Sleep(period)
 	}
 
 	OpenErrorCount := 0
@@ -72,12 +73,12 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != ErrCircuitBreakerOpen && err != testError {
-				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
+			if err != gobreaker.ErrOpenState && err != testError {
+				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			if err == gobreaker.ErrOpenState {
 				OpenErrorCount++
 			} else if err == testError {
 				TestErrorCount++
@@ -89,7 +90,7 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 1 {
-		t.Errorf("Expected 1 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 1 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
 	}
 
 	if TestErrorCount != 1 {
@@ -98,9 +99,8 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
-	treshold := uint(1)
+	threshold := uint(1)
 	period := time.Second
-	recoverAfter := uint(1)
 
 	testError := fmt.Errorf("test error")
 
@@ -116,7 +116,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 
 	// Create the circuit breaker middleware
-	middleware := NewCircuitBreakerMiddleware(treshold, period, recoverAfter)(mockHandler)
+	middleware := NewCircuitBreakerMiddleware(threshold, period)(mockHandler)
 
 	// Bring the circuit breaker to the Open state
 	err := middleware.Handle(mockConn, mockRequest)
@@ -134,17 +134,19 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 		go func() {
 			results <- middleware.Handle(mockConn, mockRequest)
 		}()
+		// Wait out circuit breaker to change state
+		time.Sleep(period)
 	}
 
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != ErrCircuitBreakerOpen && err != nil {
-				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
+			if err != gobreaker.ErrOpenState && err != nil {
+				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			if err == gobreaker.ErrOpenState {
 				OpenErrorCount++
 			} else if err == nil {
 				SuccessCount++
@@ -156,7 +158,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 1 {
-		t.Errorf("Expected 1 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 1 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
 	}
 
 	if SuccessCount != 1 {
@@ -177,12 +179,12 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case err := <-results:
-			if err != ErrCircuitBreakerOpen && err != nil {
-				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
+			if err != gobreaker.ErrOpenState && err != nil {
+				t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			if err == gobreaker.ErrOpenState {
 				OpenErrorCount++
 			} else if err == nil {
 				SuccessCount++
@@ -194,7 +196,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	}
 
 	if OpenErrorCount != 0 {
-		t.Errorf("Expected 0 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 0 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
 	}
 
 	if SuccessCount != 2 {
@@ -203,9 +205,8 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 }
 
 func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
-	treshold := uint(2)
+	threshold := uint(2)
 	period := 20 * time.Millisecond
-	recoverAfter := uint(1)
 
 	testError := fmt.Errorf("test error")
 
@@ -221,58 +222,51 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 
 	// Create the circuit breaker middleware
-	middleware := NewCircuitBreakerMiddleware(treshold, period, recoverAfter)(mockHandler)
+	middleware := NewCircuitBreakerMiddleware(threshold, period)(mockHandler)
 
 	// Bring the circuit breaker to the Open state
 
-	if err := middleware.Handle(mockConn, mockRequest); err != testError {
-		t.Errorf("Expected error %v, but got %v", testError, err)
+	for i := uint(0); i < threshold; i++ {
+		if err := middleware.Handle(mockConn, mockRequest); err != testError {
+			t.Errorf("Expected error %v, but got %v", testError, err)
+		}
 	}
 
+	// Confirm that the circuit breaker is now in the Semi-open state
 	time.Sleep(period)
-
-	if err := middleware.Handle(mockConn, mockRequest); err != testError {
-		t.Errorf("Expected error %v, but got %v", testError, err)
-	}
-
-	// Confirm that the circuit breaker is now in the Closed state
 
 	errorToReturn = nil
 	results := make(chan error)
 
-	for i := 0; i < 2; i++ {
-		go func() {
-			results <- middleware.Handle(mockConn, mockRequest)
-		}()
-	}
+	go func() {
+		results <- middleware.Handle(mockConn, mockRequest)
+	}()
 
 	OpenErrorCount := 0
 	SuccessCount := 0
 
-	for i := 0; i < 2; i++ {
-		select {
-		case err := <-results:
-			if err != ErrCircuitBreakerOpen && err != nil {
-				t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
-				continue
-			}
-
-			if err == ErrCircuitBreakerOpen {
-				OpenErrorCount++
-			} else if err == nil {
-				SuccessCount++
-			}
-
-		case <-time.After(100 * time.Millisecond):
-			t.Fatal("Expected error, but got none")
+	select {
+	case err := <-results:
+		fmt.Println(err)
+		if err != gobreaker.ErrOpenState && err != nil {
+			t.Errorf("Expected error %v, but got %v", gobreaker.ErrOpenState, err)
 		}
+
+		if err == gobreaker.ErrOpenState {
+			OpenErrorCount++
+		} else if err == nil {
+			SuccessCount++
+		}
+
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Expected error, but got none")
 	}
 
 	if OpenErrorCount != 0 {
-		t.Errorf("Expected 0 ErrCircuitBreakerOpen error, but got %d", OpenErrorCount)
+		t.Errorf("Expected 0 gobreaker.ErrOpenState error, but got %d", OpenErrorCount)
 	}
 
-	if SuccessCount != 2 {
-		t.Errorf("Expected 2 test error, but got %d", SuccessCount)
+	if SuccessCount != 1 {
+		t.Errorf("Expected 1 test error, but got %d", SuccessCount)
 	}
 }
