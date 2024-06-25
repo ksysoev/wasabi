@@ -1,101 +1,57 @@
 package request
 
 import (
+	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/dispatch"
+	"github.com/sony/gobreaker/v2"
 )
-
-type CircuitBreakerState uint8
 
 var (
 	ErrCircuitBreakerOpen = fmt.Errorf("circuit breaker is open")
-)
-
-const (
-	Closed CircuitBreakerState = iota
-	Open
 )
 
 // NewCircuitBreakerMiddleware creates a new circuit breaker middleware with the specified parameters.
 // It returns a function that wraps the provided `wasabi.RequestHandler` and implements the circuit breaker logic.
 // The circuit breaker monitors the number of errors and successful requests within a given time period.
 // If the number of errors exceeds the threshold, the circuit breaker switches to the "Open" state and rejects subsequent requests.
-// After a specified number of successful requests, the circuit breaker switches back to the "Closed" state.
-// The circuit breaker uses a lock to ensure thread safety.
-// The `treshold` parameter specifies the maximum number of errors allowed within the time period.
+// After a set amount of period, the circuit breaker switches to the
+// "Semi-open" state.
+// If request succeeds in "Semi-open" state, the state will be changed to
+// "Closed", else back to "Open".
+// The `threshold` parameter specifies the maximum number of errors allowed within the time period.
 // The `period` parameter specifies the duration of the time period.
-// The `recoverAfter` parameter specifies the number of successful requests required to recover from the "Open" state.
 // The returned function can be used as middleware in a Wasabi server.
-func NewCircuitBreakerMiddleware(treshold uint, period time.Duration, recoverAfter uint) func(next wasabi.RequestHandler) wasabi.RequestHandler {
-	var errorCounter, successCounter uint
-
-	intervalEnds := time.Now().Add(period)
-	state := Closed
-
-	lock := &sync.RWMutex{}
-	semiOpenLock := &sync.Mutex{}
+func NewCircuitBreakerMiddleware(threshold uint32, period time.Duration) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+	var st gobreaker.Settings
+	st.Timeout = period
+	st.ReadyToTrip = func(counts gobreaker.Counts) bool {
+		return counts.ConsecutiveFailures >= threshold
+	}
+	cb := gobreaker.NewCircuitBreaker[any](st)
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
-			lock.RLock()
-			currentState := state
-			lock.RUnlock()
-
-			switch currentState {
-			case Closed:
+			_, err := cb.Execute(func() (any, error) {
 				err := next.Handle(conn, req)
-				if err == nil {
-					return nil
+				if err != nil {
+					return nil, err
 				}
 
-				lock.Lock()
-				defer lock.Unlock()
-
-				now := time.Now()
-				if intervalEnds.Before(time.Now()) {
-					intervalEnds = now.Add(period)
-					errorCounter = 0
-				}
-
-				errorCounter++
-				if errorCounter >= treshold {
-					state = Open
-				}
-
-				return err
-			case Open:
-				if !semiOpenLock.TryLock() {
+				return struct{}{}, nil
+			})
+			if err != nil {
+				if errors.Is(err, gobreaker.ErrOpenState) {
 					return ErrCircuitBreakerOpen
 				}
 
-				defer semiOpenLock.Unlock()
-
-				err := next.Handle(conn, req)
-
-				lock.Lock()
-				defer lock.Unlock()
-
-				if err != nil {
-					successCounter = 0
-					return err
-				}
-
-				successCounter++
-
-				if successCounter >= recoverAfter {
-					state = Closed
-					errorCounter = 0
-					successCounter = 0
-				}
-
-				return nil
-			default:
-				panic("Unknown state of circuit breaker")
+				return err
 			}
+
+			return nil
 		})
 	}
 }
