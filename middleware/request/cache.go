@@ -72,6 +72,10 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 				return err
 			}
 
+			if req.Context().Err() != nil {
+				return req.Context().Err()
+			}
+
 			respCache, ok := resp.(responseCache)
 			if !ok {
 				return fmt.Errorf("invalid response cache type")
