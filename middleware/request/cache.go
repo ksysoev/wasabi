@@ -62,11 +62,10 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 					return nil
 				}))
 
-				err := next.Handle(connWrapper, req)
-
-				if err != nil {
+				if err := next.Handle(connWrapper, req); err != nil {
 					return nil, err
 				}
+
 				if ttl > 0 {
 					cache.Set(cacheKey, resp, ttl)
 				}
