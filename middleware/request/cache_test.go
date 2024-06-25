@@ -16,7 +16,7 @@ func TestNewCacheMiddleware(t *testing.T) {
 	testResp := []byte("testData")
 	callCounter := 0
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
-		callCounter += 1
+		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
@@ -51,7 +51,7 @@ func TestNewCacheMiddleware_NoCache(t *testing.T) {
 	callCounter := 0
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
-		callCounter += 1
+		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
@@ -108,7 +108,7 @@ func TestNewCacheMiddleware_ContextCancelled(t *testing.T) {
 	testResp := []byte("testData")
 	callCounter := 0
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
-		callCounter += 1
+		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
