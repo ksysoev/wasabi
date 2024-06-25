@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/ksysoev/ratestor v0.1.0
+	github.com/sony/gobreaker/v2 v2.0.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
 	golang.org/x/sync v0.7.0
