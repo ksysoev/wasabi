@@ -11,7 +11,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type ResponseCache struct {
+type responseCache struct {
 	data    []byte
 	msgType wasabi.MessageType
 }
@@ -20,7 +20,7 @@ type ResponseCache struct {
 // The middleware caches the response of the request for a given `duration` and returns the cached response if the request is made again within the cache duration.
 // If the request is made after the cache duration, the middleware forwards the request to the next handler and caches the response.
 func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
-	cache := ttlcache.New[string, ResponseCache]()
+	cache := ttlcache.New[string, responseCache]()
 
 	done := make(chan struct{})
 	go func() {
@@ -48,7 +48,7 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 					return item.Value(), nil
 				}
 
-				var resp ResponseCache
+				var resp responseCache
 
 				connWrapper := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(func(conn wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
 					resp.data = msg
@@ -72,7 +72,7 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 				return err
 			}
 
-			respCache, ok := resp.(ResponseCache)
+			respCache, ok := resp.(responseCache)
 			if !ok {
 				return fmt.Errorf("invalid response cache type")
 			}
