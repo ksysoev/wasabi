@@ -1,9 +1,10 @@
 package request
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/dispatch"
@@ -18,18 +19,18 @@ type ResponseCache struct {
 // NewCacheMiddleware returns a new cache middleware that wraps the provided `next` request handler.
 // The middleware caches the response of the request for a given `duration` and returns the cached response if the request is made again within the cache duration.
 // If the request is made after the cache duration, the middleware forwards the request to the next handler and caches the response.
-func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) func(next wasabi.RequestHandler) wasabi.RequestHandler {
-	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
-		cache, err := ristretto.NewCache(&ristretto.Config{
-			NumCounters: 1e7,
-			MaxCost:     1 << 30,
-			BufferItems: 64,
-		})
-		if err != nil {
-			//Should not happen, error is due to invalid configuration only
-			panic(err)
-		}
+func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
+	cache := ttlcache.New[string, ResponseCache]()
 
+	go func() {
+		cache.Start()
+	}()
+
+	closer := func() {
+		cache.Stop()
+	}
+
+	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		group := &singleflight.Group{}
 
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -40,8 +41,8 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 			}
 
 			resp, err, _ := group.Do(cacheKey, func() (interface{}, error) {
-				if item, found := cache.Get(cacheKey); found {
-					return item, nil
+				if item := cache.Get(cacheKey); item != nil {
+					return item.Value(), nil
 				}
 
 				var resp ResponseCache
@@ -57,8 +58,9 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 				if err != nil {
 					return nil, err
 				}
-
-				cache.SetWithTTL(cacheKey, resp, 0, ttl)
+				if ttl > 0 {
+					cache.Set(cacheKey, resp, ttl)
+				}
 
 				return resp, nil
 			})
@@ -67,11 +69,12 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 				return err
 			}
 
-			respCache := resp.(ResponseCache)
+			respCache, ok := resp.(ResponseCache)
+			if !ok {
+				return fmt.Errorf("invalid response cache type")
+			}
 
-			conn.Send(respCache.msgType, respCache.data)
-
-			return nil
+			return conn.Send(respCache.msgType, respCache.data)
 		})
-	}
+	}, closer
 }
