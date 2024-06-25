@@ -28,15 +28,9 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/ksysoev/wasabi"
 	"golang.org/x/exp/slog"
-)
-
-const (
-	ReadHeaderTimeout = 3 * time.Second
-	ReadTimeout       = 30 * time.Second
 )
 
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
@@ -56,6 +50,8 @@ type Server struct {
 }
 
 type Option func(*Server)
+
+type ctxConfigKey struct{}
 
 // WithReadinessChan sets ch to [Server] and will be closed once the [Server] is
 // ready to accept connection. Typically used in testing after calling [Run]
@@ -86,16 +82,28 @@ func NewServer(addr string, opts ...Option) *Server {
 		opt(server)
 	}
 
+	serverConfig := server.GetServerConfig()
+
 	server.handler = &http.Server{
 		Addr:              addr,
-		ReadHeaderTimeout: ReadHeaderTimeout,
-		ReadTimeout:       ReadTimeout,
+		ReadHeaderTimeout: serverConfig.ReadHeaderTimeout,
+		ReadTimeout:       serverConfig.ReadTimeout,
 		BaseContext: func(_ net.Listener) context.Context {
 			return server.baseCtx
 		},
 	}
 
 	return server
+}
+
+// Helper to fetch server config. Returns Default config if base ctx has no config set
+func (s *Server) GetServerConfig() Config {
+	config, ok := s.baseCtx.Value(ctxConfigKey{}).(Config)
+	if !ok {
+		return DefaultConfig
+	}
+
+	return config
 }
 
 // AddChannel adds new channel to server
@@ -217,7 +225,8 @@ func WithBaseContext(ctx context.Context) Option {
 	}
 
 	return func(s *Server) {
-		s.baseCtx = ctx
+		config := s.GetServerConfig()
+		s.baseCtx = context.WithValue(ctx, ctxConfigKey{}, config)
 	}
 }
 
@@ -248,5 +257,13 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 func WithProfilerEndpoint() Option {
 	return func(s *Server) {
 		s.pprofEnabled = true
+	}
+}
+
+// WithServerConfig is an option function that overrides the default configuration settings of the server.
+// This can give the client more control over the server feature functions
+func WithServerConfig(config Config) Option {
+	return func(s *Server) {
+		s.baseCtx = context.WithValue(s.baseCtx, ctxConfigKey{}, config)
 	}
 }
