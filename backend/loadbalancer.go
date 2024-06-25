@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
 
 	"github.com/ksysoev/wasabi"
@@ -9,11 +10,17 @@ import (
 
 var ErrNotEnoughBackends = fmt.Errorf("load balancer requires at least 2 backends")
 
-const minRequiredBackends = 2
+const (
+	minRequiredBackends = 2
+	errorThreshold      = 5
+)
 
 type LoadBalancerNode struct {
-	backend wasabi.RequestHandler
-	counter atomic.Int32
+	backend       wasabi.RequestHandler
+	counter       atomic.Int32
+	errors        atomic.Int32
+	alive         atomic.Bool
+	lastLiveCheck atomic.Value
 }
 
 type LoadBalancer struct {
@@ -31,9 +38,14 @@ func NewLoadBalancer(backends []wasabi.RequestHandler) (*LoadBalancer, error) {
 
 	for i, backend := range backends {
 		nodes[i] = &LoadBalancerNode{
-			backend: backend,
-			counter: atomic.Int32{},
+			backend:       backend,
+			counter:       atomic.Int32{},
+			errors:        atomic.Int32{},
+			alive:         atomic.Bool{},
+			lastLiveCheck: atomic.Value{},
 		}
+
+		nodes[i].alive.Store(true)
 	}
 
 	return &LoadBalancer{
@@ -49,21 +61,49 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	backend.counter.Add(1)
 	defer backend.counter.Add(-1)
 
-	return backend.backend.Handle(conn, r)
+	err := backend.backend.Handle(conn, r)
+	if err != nil {
+		backend.errors.Add(1)
+		if backend.errors.Load() > errorThreshold {
+			backend.alive.Store(false)
+		}
+		return err
+	}
+
+	if backend.errors.Load() > 0 {
+		backend.errors.Store(0)
+		backend.alive.Store(true)
+	}
+
+	return nil
 }
 
 // getLeastBusyNode returns the least busy backend node.
 // It returns the least busy backend node.
 func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
-	minRequests := lb.backends[0].counter.Load()
-	minBackend := lb.backends[0]
+	var minBackend *LoadBalancerNode
+	var minRequests int32 = math.MaxInt32
 
-	for _, b := range lb.backends[1:] {
-		counter := b.counter.Load()
+	allDown := true
+	for _, b := range lb.backends {
+		if b.alive.Load() {
+			allDown = false
+			counter := b.counter.Load()
 
-		if counter < minRequests {
-			minRequests = counter
-			minBackend = b
+			if counter < minRequests {
+				minRequests = counter
+				minBackend = b
+			}
+		}
+	}
+
+	if allDown {
+		for _, b := range lb.backends {
+			counter := b.counter.Load()
+			if minBackend == nil || counter < minRequests {
+				minRequests = counter
+				minBackend = b
+			}
 		}
 	}
 
