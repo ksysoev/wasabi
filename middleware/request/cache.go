@@ -16,9 +16,15 @@ type responseCache struct {
 	msgType wasabi.MessageType
 }
 
-// NewCacheMiddleware returns a new cache middleware that wraps the provided `next` request handler.
-// The middleware caches the response of the request for a given `duration` and returns the cached response if the request is made again within the cache duration.
-// If the request is made after the cache duration, the middleware forwards the request to the next handler and caches the response.
+// NewCacheMiddleware returns a middleware function that implements caching for requests.
+// This middleware also implement debouncing pattern for requests to avoid duplicate requests hitting backend.
+//
+// Parameters:
+// - requestCache: A function that takes a `wasabi.Request` and returns a cache key and TTL duration.
+//
+// Returns:
+// - middleware: A function that takes a `wasabi.RequestHandler` and returns a new `wasabi.RequestHandler` with caching functionality.
+// - cacheCloser: A function that stops the cache and performs cleanup.
 func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
 	cache := ttlcache.New[string, responseCache]()
 
