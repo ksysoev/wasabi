@@ -22,12 +22,15 @@ type ResponseCache struct {
 func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
 	cache := ttlcache.New[string, ResponseCache]()
 
+	done := make(chan struct{})
 	go func() {
 		cache.Start()
+		close(done)
 	}()
 
 	closer := func() {
 		cache.Stop()
+		<-done
 	}
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
