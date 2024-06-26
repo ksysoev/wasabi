@@ -17,10 +17,10 @@ const (
 
 type LoadBalancerNode struct {
 	backend       wasabi.RequestHandler
+	lastLiveCheck atomic.Value
 	counter       atomic.Int32
 	errors        atomic.Int32
 	alive         atomic.Bool
-	lastLiveCheck atomic.Value
 }
 
 type LoadBalancer struct {
@@ -63,10 +63,10 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 
 	err := backend.backend.Handle(conn, r)
 	if err != nil {
-		backend.errors.Add(1)
-		if backend.errors.Load() > errorThreshold {
+		if backend.errors.Add(1) == errorThreshold {
 			backend.alive.Store(false)
 		}
+
 		return err
 	}
 
@@ -82,9 +82,11 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // It returns the least busy backend node.
 func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
 	var minBackend *LoadBalancerNode
+
 	var minRequests int32 = math.MaxInt32
 
 	allDown := true
+
 	for _, b := range lb.backends {
 		if b.alive.Load() {
 			allDown = false
