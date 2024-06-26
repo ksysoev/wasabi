@@ -30,12 +30,16 @@ func ExponentialRetryConfig(maxRetries int, seed time.Duration, delayFactor int)
 	return &RetryConfig{ExponentialRetryPolicy, maxRetries, seed, delayFactor}
 }
 
+func ExponentialRetryConfigWithDefaultDelayFactor(maxRetries int, seed time.Duration) *RetryConfig {
+	return &RetryConfig{ExponentialRetryPolicy, maxRetries, seed, defaultDelayFactor}
+}
+
 func GetRetryInterval(policy RetryPolicy, seed time.Duration, iteration, delayFactor int) time.Duration {
 	switch policy {
 	case LinearRetryPolicy:
 		return seed
 	case ExponentialRetryPolicy:
-		return seed * (time.Duration(math.Pow(defaultDelayFactor, float64(iteration))))
+		return seed * (time.Duration(math.Pow(float64(delayFactor), float64(iteration))))
 	default:
 		errMsg := fmt.Sprintf("Unsupported retry policy %v", policy)
 		panic(errMsg)
