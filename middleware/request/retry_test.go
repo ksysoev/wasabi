@@ -72,7 +72,7 @@ func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T)
 
 func TestNewRetryMiddleware_WithExponentialRetryPolicy(t *testing.T) {
 	maxRetries := 3
-	interval := time.Second
+	interval := time.Microsecond
 	middleware := NewRetryMiddleware(*ExponentialRetryConfig(maxRetries, interval, 2))
 
 	// Create a mock request handler
