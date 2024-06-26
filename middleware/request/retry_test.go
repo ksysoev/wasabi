@@ -11,10 +11,10 @@ import (
 	"github.com/ksysoev/wasabi/mocks"
 )
 
-func TestNewRetryMiddleware(t *testing.T) {
+func TestNewRetryMiddleware_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(maxRetries, interval)
+	middleware := NewRetryMiddleware(maxRetries, interval, LinearRetryPolicy)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -44,10 +44,10 @@ func TestNewRetryMiddleware(t *testing.T) {
 	}
 }
 
-func TestNewRetryMiddleware_CancelledContext(t *testing.T) {
+func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(maxRetries, interval)
+	middleware := NewRetryMiddleware(maxRetries, interval, LinearRetryPolicy)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
