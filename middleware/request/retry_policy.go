@@ -1,32 +1,43 @@
 package request
 
 import (
+	"fmt"
+	"math"
 	"time"
-
-	"github.com/ksysoev/wasabi"
 )
 
-func LinearRetryPolicy(maxRetries int, interval time.Duration, next wasabi.RequestHandler, conn wasabi.Connection, req wasabi.Request) error {
-	var err error
+type RetryPolicy int
 
-	ticker := time.NewTicker(interval)
+const (
+	LinearRetryPolicy RetryPolicy = iota + 1
+	ExponentialRetryPolicy
+)
 
-	defer ticker.Stop()
+const defaultDelayFactor = 2
 
-	for i := 0; i < maxRetries; i++ {
-		err = next.Handle(conn, req)
-		if err == nil {
-			return nil
-		}
+type RetryConfig struct {
+	retryPolicy  RetryPolicy
+	maxRetries   int
+	seedInterval time.Duration
+	delayFactor  int
+}
 
-		ticker.Reset(interval)
+func LinearRetryConfig(maxRetries int, interval time.Duration) *RetryConfig {
+	return &RetryConfig{LinearRetryPolicy, maxRetries, interval, -1}
+}
 
-		select {
-		case <-req.Context().Done():
-			return req.Context().Err()
-		case <-ticker.C:
-		}
+func ExponentialRetryConfig(maxRetries int, seed time.Duration, delayFactor int) *RetryConfig {
+	return &RetryConfig{ExponentialRetryPolicy, maxRetries, seed, delayFactor}
+}
+
+func GetRetryInterval(policy RetryPolicy, seed time.Duration, iteration, delayFactor int) time.Duration {
+	switch policy {
+	case LinearRetryPolicy:
+		return seed
+	case ExponentialRetryPolicy:
+		return seed * (time.Duration(math.Pow(defaultDelayFactor, float64(iteration))))
+	default:
+		errMsg := fmt.Sprintf("Unsupported retry policy %v", policy)
+		panic(errMsg)
 	}
-
-	return err
 }
