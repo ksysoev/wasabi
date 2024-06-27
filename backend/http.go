@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/channel"
 )
 
 const defaultTimeout = 30 * time.Second
@@ -78,7 +79,15 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 		return err
 	}
 
-	return conn.Send(wasabi.MsgTypeText, body)
+	if err := conn.Send(wasabi.MsgTypeText, body); err != nil {
+		if err == channel.ErrConnectionClosed {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // WithTimeout sets the default timeout for the HTTP client.

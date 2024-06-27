@@ -2,10 +2,12 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"sync"
 
 	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/channel"
 	"nhooyr.io/websocket"
 )
 
@@ -75,10 +77,20 @@ func (b *QueueBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 
 	select {
 	case resp := <-respChan:
-		return conn.Send(resp.msgType, resp.data)
+		err = conn.Send(resp.msgType, resp.data)
 	case <-r.Context().Done():
-		return r.Context().Err()
+		err = r.Context().Err()
 	}
+
+	if err != nil {
+		if errors.Is(err, channel.ErrConnectionClosed) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // OnResponse handles the response received from the server for a specific request.
