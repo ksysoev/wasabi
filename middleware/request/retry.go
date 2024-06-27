@@ -15,7 +15,7 @@ func NewRetryMiddleware(retryConfig RetryConfig) func(next wasabi.RequestHandler
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			var err error
 
-			ticker := time.NewTicker(retryConfig.seedInterval)
+			ticker := time.NewTicker(retryConfig.getRetryInterval(0))
 
 			defer ticker.Stop()
 
@@ -25,7 +25,7 @@ func NewRetryMiddleware(retryConfig RetryConfig) func(next wasabi.RequestHandler
 					return nil
 				}
 
-				ticker.Reset(GetRetryInterval(retryConfig.retryPolicy, retryConfig.seedInterval, i, retryConfig.delayFactor))
+				ticker.Reset(retryConfig.getRetryInterval(i))
 
 				select {
 				case <-req.Context().Done():
