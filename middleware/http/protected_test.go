@@ -12,6 +12,7 @@ func TestProtectedAuthMiddleware(t *testing.T) {
 		if token != "SECRET" {
 			return errors.New("invalid token")
 		}
+
 		return nil
 	}
 
