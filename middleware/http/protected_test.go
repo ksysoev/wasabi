@@ -1,27 +1,30 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestNewBasicAuthMiddleware(t *testing.T) {
-	users := map[string]string{
-		"admin": "password",
-		"user":  "123456",
+func TestProtectedAuthMiddleware(t *testing.T) {
+	verify := func(token string) error {
+		if token != "SECRET" {
+			return errors.New("invalid token")
+		}
+		return nil
 	}
-	realm := "Test Realm"
+
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	middleware := NewBasicAuthMiddleware(users, realm)
+	middleware := NewProtectedMiddleware(verify)
 	handler := middleware(nextHandler)
 
-	// Test case 1: Valid credentials
+	// Test case 1: token verification successful
 	req1, _ := http.NewRequest("GET", "/", http.NoBody)
-	req1.SetBasicAuth("admin", "password")
+	req1.Header.Set("Authorization", "Bearer SECRET")
 
 	w1 := httptest.NewRecorder()
 
@@ -37,7 +40,7 @@ func TestNewBasicAuthMiddleware(t *testing.T) {
 
 	// Test case 2: Invalid credentials
 	req2, _ := http.NewRequest("GET", "/", http.NoBody)
-	req2.SetBasicAuth("admin", "wrongpassword")
+	req2.Header.Set("Authorization", "Bearer Idon'tKnow")
 
 	w2 := httptest.NewRecorder()
 

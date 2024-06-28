@@ -13,12 +13,12 @@ func NewBasicAuthMiddleware(users map[string]string, realm string) func(next htt
 			user, pass, ok := r.BasicAuth()
 
 			if !ok {
-				unauthorized(w, realm)
+				Unauthorized(w, "Unauthorized", setRealm(realm))
 				return
 			}
 
 			if p, ok := users[user]; !ok || p != pass {
-				unauthorized(w, realm)
+				Unauthorized(w, "Unauthorized", setRealm(realm))
 				return
 			}
 
@@ -27,8 +27,9 @@ func NewBasicAuthMiddleware(users map[string]string, realm string) func(next htt
 	}
 }
 
-// unauthorized sends an HTTP 401 Unauthorized response with the specified realm.
-func unauthorized(w http.ResponseWriter, realm string) {
-	w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+// sets the specified realm in response header
+func setRealm(realm string) func(w http.ResponseWriter) {
+	return func(w http.ResponseWriter) {
+		w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+	}
 }
