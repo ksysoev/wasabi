@@ -8,6 +8,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -146,7 +147,15 @@ func (c *Conn) Send(msgType wasabi.MessageType, msg []byte) error {
 		c.inActiveTimer.Reset(c.inActiveTimeout)
 	}
 
-	return c.ws.Write(c.ctx, msgType, msg)
+	err := c.ws.Write(c.ctx, msgType, msg)
+
+	if errors.Is(err, syscall.EPIPE) {
+		return ErrConnectionClosed
+	} else if errors.Is(err, net.ErrClosed) {
+		return ErrConnectionClosed
+	}
+
+	return err
 }
 
 // close closes the connection.
