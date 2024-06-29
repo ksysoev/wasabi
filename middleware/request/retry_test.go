@@ -14,7 +14,7 @@ import (
 func TestNewRetryMiddleware_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(*LinearRetryConfig(maxRetries, interval))
+	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), ShouldRetryBasedOnLimit(maxRetries))
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -47,7 +47,7 @@ func TestNewRetryMiddleware_WithLinearRetryPolicy(t *testing.T) {
 func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(*LinearRetryConfig(maxRetries, interval))
+	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), ShouldRetryBasedOnLimit(maxRetries))
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -73,7 +73,8 @@ func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T)
 func TestNewRetryMiddleware_WithExponentialRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(*ExponentialRetryConfig(maxRetries, interval, 2))
+	delayFactor := 2
+	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), ShouldRetryBasedOnLimit(maxRetries))
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -106,7 +107,8 @@ func TestNewRetryMiddleware_WithExponentialRetryPolicy(t *testing.T) {
 func TestNewRetryMiddleware_CancelledContext_WithExponentialRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(*ExponentialRetryConfig(maxRetries, interval, 2))
+	delayFactor := 2
+	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), ShouldRetryBasedOnLimit(maxRetries))
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {

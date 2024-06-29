@@ -36,21 +36,12 @@ func LinearGetRetryInterval(interval time.Duration) GetRetryInterval {
 	}
 }
 
-const defaultDelayFactor = 2
+type ShouldRetry func() (bool, int)
 
-type RetryConfig struct {
-	getRetryInterval GetRetryInterval
-	maxRetries       int
-}
-
-func LinearRetryConfig(maxRetries int, interval time.Duration) *RetryConfig {
-	return &RetryConfig{LinearGetRetryInterval(interval), maxRetries}
-}
-
-func ExponentialRetryConfig(maxRetries int, seed time.Duration, delayFactor int) *RetryConfig {
-	return &RetryConfig{ExponentialGetRetryInterval(seed, delayFactor), maxRetries}
-}
-
-func ExponentialRetryConfigWithDefaultDelayFactor(maxRetries int, seed time.Duration) *RetryConfig {
-	return &RetryConfig{ExponentialGetRetryInterval(seed, defaultDelayFactor), maxRetries}
+func ShouldRetryBasedOnLimit(maxRetries int) ShouldRetry {
+	i := 0
+	return func() (bool, int) {
+		i++
+		return (i < maxRetries), i
+	}
 }
