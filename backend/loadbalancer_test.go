@@ -10,7 +10,7 @@ import (
 func TestNewLoadBalancer(t *testing.T) {
 	backends := []struct {
 		handler wasabi.RequestHandler
-		weight  int
+		weight  uint
 	}{{
 		handler: mocks.NewMockBackend(t),
 		weight:  1,
@@ -23,7 +23,7 @@ func TestNewLoadBalancer(t *testing.T) {
 
 	backends = append(backends, struct {
 		handler wasabi.RequestHandler
-		weight  int
+		weight  uint
 	}{mocks.NewMockBackend(t), 1})
 
 	lb, err := NewLoadBalancer(backends)
@@ -49,7 +49,7 @@ func TestNewLoadBalancer(t *testing.T) {
 func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
 	backends := []struct {
 		handler wasabi.RequestHandler
-		weight  int
+		weight  uint
 	}{{
 		handler: mocks.NewMockBackend(t),
 		weight:  1,
@@ -75,16 +75,72 @@ func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
 	}
 }
 
+func TestLoadBalancer_getLeastBusyNodeWeighted(t *testing.T) {
+	backends := []struct {
+		handler wasabi.RequestHandler
+		weight  uint
+	}{{
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}, {
+		handler: mocks.NewMockBackend(t),
+		weight:  3, // supposed to handle 3x load to be as busy as the second handler
+	}}
+
+	lb, err := NewLoadBalancer(backends)
+	if err != nil {
+		t.Fatalf("Failed to create load balancer: %v", err)
+	}
+
+	// Increment the counter of the backends
+	lb.backends[0].counter.Add(1)
+	lb.backends[1].counter.Add(2)
+
+	// Get the least busy node
+	leastBusyNode := lb.getLeastBusyNode()
+
+	// Check if the least busy node is the second backend
+	if leastBusyNode != lb.backends[1] {
+		t.Errorf("Expected least busy node to be the second backend, but got %v because the counter of first backend is: %d and counter of second backend is: %d", leastBusyNode, lb.backends[0].counter.Load(), lb.backends[1].counter.Load())
+	}
+}
+
+func TestLoadBalancer_getLeastBusyNodeZeroWeight(t *testing.T) {
+	backends := []struct {
+		handler wasabi.RequestHandler
+		weight  uint
+	}{{
+		handler: mocks.NewMockBackend(t),
+		weight:  0,
+	}, {
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}}
+
+	lb, err := NewLoadBalancer(backends)
+	if err != nil {
+		t.Fatalf("Failed to create load balancer: %v", err)
+	}
+
+	// Get the least busy node
+	leastBusyNode := lb.getLeastBusyNode()
+
+	// Check if the least busy node is the second backend
+	if leastBusyNode != lb.backends[1] {
+		t.Errorf("Expected least busy node to be the second backend, but got %v", leastBusyNode)
+	}
+}
+
 func TestLoadBalancer_Handle(t *testing.T) {
 	firstBackend := struct {
 		handler wasabi.RequestHandler
-		weight  int
+		weight  uint
 	}{handler: mocks.NewMockBackend(t), weight: 1}
 
 	// Create mock backends for testing
 	backends := []struct {
 		handler wasabi.RequestHandler
-		weight  int
+		weight  uint
 	}{firstBackend, {
 		handler: mocks.NewMockBackend(t),
 		weight:  1,

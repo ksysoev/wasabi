@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
 
 	"github.com/ksysoev/wasabi"
@@ -14,7 +15,7 @@ const minRequiredBackends = 2
 type LoadBalancerNode struct {
 	backend wasabi.RequestHandler
 	counter atomic.Int32
-	weight  int
+	weight  uint
 }
 
 type LoadBalancer struct {
@@ -25,7 +26,7 @@ type LoadBalancer struct {
 // It takes a slice of RequestHandler as a parameter and returns a new instance of LoadBalancer.
 func NewLoadBalancer(backends []struct {
 	handler wasabi.RequestHandler
-	weight  int
+	weight  uint
 }) (*LoadBalancer, error) {
 	if len(backends) < minRequiredBackends {
 		return nil, ErrNotEnoughBackends
@@ -60,11 +61,15 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // getLeastBusyNode returns the least busy backend node.
 // It returns the least busy backend node.
 func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
-	minRequests := lb.backends[0].counter.Load()
-	minBackend := lb.backends[0]
+	var	minRequests = int32(math.MaxInt32)
+	var minBackend *LoadBalancerNode
 
-	for _, b := range lb.backends[1:] {
-		counter := b.counter.Load()
+	for _, b := range lb.backends {
+		if b.weight == 0 {
+			continue
+		}
+
+		counter := b.counter.Load() / int32(b.weight)
 
 		if counter < minRequests {
 			minRequests = counter
