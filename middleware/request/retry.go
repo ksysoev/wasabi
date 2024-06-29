@@ -8,9 +8,9 @@ import (
 )
 
 // NewRetryMiddleware returns a new retry middleware that wraps the provided `next` request handler.
-// The middleware accepts a `RetryConfig` consisting of:
-//   - `maxRetries`: maximum number of retries allowed
-//   - `GetRetryInterval`: A higher order function that returns a function to calculate next retry interval
+// The middleware accepts 2 params consisting of:
+//   - `getRetryInterval`: A higher order function that returns a function to calculate next retry interval
+//   - `shouldRetry`: A higher order function that returns a function to calculate if we should retry again or not
 //
 // If the request succeeds at any retry, the middleware returns `nil`. If all retries fail, it returns the last error encountered.
 func NewRetryMiddleware(getRetryInterval GetRetryInterval, shouldRetry ShouldRetry) func(next wasabi.RequestHandler) wasabi.RequestHandler {

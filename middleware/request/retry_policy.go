@@ -36,6 +36,9 @@ func LinearGetRetryInterval(interval time.Duration) GetRetryInterval {
 	}
 }
 
+
+// ShouldRetry is a higher order function that returns a function to decide whether to retry or not
+// The inner function when called will return a boolean true to proceed retry and an integer denoting current iteration
 type ShouldRetry func() (bool, int)
 
 func ShouldRetryBasedOnLimit(maxRetries int) ShouldRetry {
