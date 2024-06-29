@@ -61,7 +61,7 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // getLeastBusyNode returns the least busy backend node.
 // It returns the least busy backend node.
 func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
-	var	minRequests = int32(math.MaxInt32)
+	var minRequests = int32(math.MaxInt32)
 	var minBackend *LoadBalancerNode
 
 	for _, b := range lb.backends {
