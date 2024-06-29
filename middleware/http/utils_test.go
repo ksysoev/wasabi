@@ -11,7 +11,7 @@ import (
 func TestUnauthorized(t *testing.T) {
 	w := httptest.NewRecorder()
 
-	Unauthorized(w, "Test Error Message", func(w http.ResponseWriter) {
+	unauthorized(w, "Test Error Message", func(w http.ResponseWriter) {
 		w.Header().Set("TEST-HEADER", "TEST-HEADER-VALUE")
 	})
 

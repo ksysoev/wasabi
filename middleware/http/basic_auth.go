@@ -13,12 +13,12 @@ func NewBasicAuthMiddleware(users map[string]string, realm string) func(next htt
 			user, pass, ok := r.BasicAuth()
 
 			if !ok {
-				Unauthorized(w, "Unauthorized", setRealm(realm))
+				unauthorized(w, "Unauthorized", setRealm(realm))
 				return
 			}
 
 			if p, ok := users[user]; !ok || p != pass {
-				Unauthorized(w, "Unauthorized", setRealm(realm))
+				unauthorized(w, "Unauthorized", setRealm(realm))
 				return
 			}
 

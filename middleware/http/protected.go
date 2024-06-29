@@ -14,7 +14,7 @@ func NewProtectedMiddleware(verifyToken func(token string) error) func(next http
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tokenString := r.Header.Get("Authorization")
 			if tokenString == "" {
-				Unauthorized(w, "Missing authorization header in request", func(w http.ResponseWriter) { w.WriteHeader(http.StatusUnauthorized) })
+				unauthorized(w, "Missing authorization header in request")
 				return
 			}
 
@@ -22,7 +22,7 @@ func NewProtectedMiddleware(verifyToken func(token string) error) func(next http
 
 			err := verifyToken(tokenString)
 			if err != nil {
-				Unauthorized(w, "Invalid token", func(w http.ResponseWriter) { w.WriteHeader(http.StatusUnauthorized) })
+				unauthorized(w, "Invalid token")
 				return
 			}
 
