@@ -8,16 +8,23 @@ import (
 )
 
 func TestNewLoadBalancer(t *testing.T) {
-	backends := []wasabi.RequestHandler{
-		mocks.NewMockBackend(t),
-	}
+	backends := []struct {
+		handler wasabi.RequestHandler
+		weight  int
+	}{{
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}}
 
 	_, err := NewLoadBalancer(backends)
 	if err != ErrNotEnoughBackends {
 		t.Errorf("Expected error to be 'load balancer requires at least 2 backends', but got %v", err)
 	}
 
-	backends = append(backends, mocks.NewMockBackend(t))
+	backends = append(backends, struct {
+		handler wasabi.RequestHandler
+		weight  int
+	}{mocks.NewMockBackend(t), 1})
 
 	lb, err := NewLoadBalancer(backends)
 	if err != nil {
@@ -29,7 +36,7 @@ func TestNewLoadBalancer(t *testing.T) {
 	}
 
 	for i, backend := range lb.backends {
-		if backend.backend != backends[i] {
+		if backend.backend != backends[i].handler {
 			t.Errorf("Expected backend at index %d to be %v, but got %v", i, backends[i], backend.backend)
 		}
 
@@ -40,11 +47,16 @@ func TestNewLoadBalancer(t *testing.T) {
 }
 
 func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
-	backends := []wasabi.RequestHandler{
-		// Mock backends for testing
-		mocks.NewMockBackend(t),
-		mocks.NewMockBackend(t),
-	}
+	backends := []struct {
+		handler wasabi.RequestHandler
+		weight  int
+	}{{
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}, {
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}}
 
 	lb, err := NewLoadBalancer(backends)
 	if err != nil {
@@ -62,14 +74,24 @@ func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
 		t.Errorf("Expected least busy node to be the second backend, but got %v", leastBusyNode)
 	}
 }
+
 func TestLoadBalancer_Handle(t *testing.T) {
-	firstBackend := mocks.NewMockBackend(t)
+	firstBackend := struct {
+		handler wasabi.RequestHandler
+		weight  int
+	}{handler: mocks.NewMockBackend(t), weight: 1}
+
 	// Create mock backends for testing
-	backends := []wasabi.RequestHandler{
-		firstBackend,
-		mocks.NewMockBackend(t),
-		mocks.NewMockBackend(t),
-	}
+	backends := []struct {
+		handler wasabi.RequestHandler
+		weight  int
+	}{firstBackend, {
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}, {
+		handler: mocks.NewMockBackend(t),
+		weight:  1,
+	}}
 
 	lb, err := NewLoadBalancer(backends)
 	if err != nil {
@@ -80,7 +102,7 @@ func TestLoadBalancer_Handle(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockRequest := mocks.NewMockRequest(t)
 
-	firstBackend.EXPECT().Handle(mockConn, mockRequest).Return(nil)
+	firstBackend.handler.(*mocks.MockBackend).EXPECT().Handle(mockConn, mockRequest).Return(nil)
 
 	// Call the Handle method
 	err = lb.Handle(mockConn, mockRequest)
