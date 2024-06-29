@@ -41,10 +41,15 @@ func LinearGetRetryInterval(interval time.Duration) GetRetryInterval {
 // The inner function when called will return a boolean true to proceed retry and an integer denoting current iteration
 type ShouldRetry func() (bool, int)
 
+
+// ShouldRetryBasedOnLimit is a max retry based implementation of `ShouldRetry`
+// It accepts an integer param `maxRetries` denoting the maximum number of retries allowed
 func ShouldRetryBasedOnLimit(maxRetries int) ShouldRetry {
 	i := 0
+
 	return func() (bool, int) {
 		i++
+		
 		return (i < maxRetries), i
 	}
 }
