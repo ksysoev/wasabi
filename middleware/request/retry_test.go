@@ -14,7 +14,7 @@ import (
 func TestNewRetryMiddleware_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), ShouldRetryBasedOnLimit(maxRetries))
+	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), maxRetries)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -47,7 +47,7 @@ func TestNewRetryMiddleware_WithLinearRetryPolicy(t *testing.T) {
 func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
-	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), ShouldRetryBasedOnLimit(maxRetries))
+	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), maxRetries)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -74,7 +74,7 @@ func TestNewRetryMiddleware_WithExponentialRetryPolicy(t *testing.T) {
 	maxRetries := 3
 	interval := time.Microsecond
 	delayFactor := 2
-	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), ShouldRetryBasedOnLimit(maxRetries))
+	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), maxRetries)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
@@ -108,7 +108,7 @@ func TestNewRetryMiddleware_CancelledContext_WithExponentialRetryPolicy(t *testi
 	maxRetries := 3
 	interval := time.Microsecond
 	delayFactor := 2
-	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), ShouldRetryBasedOnLimit(maxRetries))
+	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), maxRetries)
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
