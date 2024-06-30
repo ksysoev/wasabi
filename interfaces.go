@@ -9,6 +9,11 @@ import (
 
 type MessageType = websocket.MessageType
 
+type WeightedBackend struct {
+	Handler RequestHandler
+	Weight  uint
+}
+
 const (
 	MsgTypeText   MessageType = websocket.MessageText
 	MsgTypeBinary MessageType = websocket.MessageBinary

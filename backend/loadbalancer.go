@@ -24,10 +24,7 @@ type LoadBalancer struct {
 
 // NewLoadBalancer creates a new instance of LoadBalancer with the given backends.
 // It takes a slice of RequestHandler as a parameter and returns a new instance of LoadBalancer.
-func NewLoadBalancer(backends []struct {
-	handler wasabi.RequestHandler
-	weight  uint
-}) (*LoadBalancer, error) {
+func NewLoadBalancer(backends []wasabi.WeightedBackend) (*LoadBalancer, error) {
 	if len(backends) < minRequiredBackends {
 		return nil, ErrNotEnoughBackends
 	}
@@ -36,9 +33,9 @@ func NewLoadBalancer(backends []struct {
 
 	for i, backend := range backends {
 		nodes[i] = &LoadBalancerNode{
-			backend: backend.handler,
+			backend: backend.Handler,
 			counter: atomic.Int32{},
-			weight:  backend.weight,
+			weight:  backend.Weight,
 		}
 	}
 
