@@ -12,3 +12,6 @@ mocks:
 
 install:
 	cp ./scripts/pre-commit ./.git/hooks/pre-commit
+
+fmt-all:
+	gofmt -w .
