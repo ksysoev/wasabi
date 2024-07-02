@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"math"
 	"sync/atomic"
 
 	"github.com/ksysoev/wasabi"
@@ -14,6 +15,7 @@ const minRequiredBackends = 2
 type LoadBalancerNode struct {
 	backend wasabi.RequestHandler
 	counter atomic.Int32
+	weight  uint
 }
 
 type LoadBalancer struct {
@@ -21,8 +23,16 @@ type LoadBalancer struct {
 }
 
 // NewLoadBalancer creates a new instance of LoadBalancer with the given backends.
-// It takes a slice of RequestHandler as a parameter and returns a new instance of LoadBalancer.
-func NewLoadBalancer(backends []wasabi.RequestHandler) (*LoadBalancer, error) {
+// It takes a slice of struct containing two fields
+//
+//	`Handler` the `wasabi.RequestHandler`
+//	`Weight`  the load factor of this handler. The more the weight, the higher load can the handler server
+//
+// Note: handlers with zero weight will be ignored and will be not considered for load balancing
+func NewLoadBalancer(backends []struct {
+	Handler wasabi.RequestHandler
+	Weight  uint
+}) (*LoadBalancer, error) {
 	if len(backends) < minRequiredBackends {
 		return nil, ErrNotEnoughBackends
 	}
@@ -31,8 +41,9 @@ func NewLoadBalancer(backends []wasabi.RequestHandler) (*LoadBalancer, error) {
 
 	for i, backend := range backends {
 		nodes[i] = &LoadBalancerNode{
-			backend: backend,
+			backend: backend.Handler,
 			counter: atomic.Int32{},
+			weight:  backend.Weight,
 		}
 	}
 
@@ -55,11 +66,16 @@ func (lb *LoadBalancer) Handle(conn wasabi.Connection, r wasabi.Request) error {
 // getLeastBusyNode returns the least busy backend node.
 // It returns the least busy backend node.
 func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
-	minRequests := lb.backends[0].counter.Load()
-	minBackend := lb.backends[0]
+	var minRequests = int32(math.MaxInt32)
 
-	for _, b := range lb.backends[1:] {
-		counter := b.counter.Load()
+	var minBackend *LoadBalancerNode
+
+	for _, b := range lb.backends {
+		if b.weight == 0 {
+			continue
+		}
+
+		counter := b.counter.Load() / int32(b.weight)
 
 		if counter < minRequests {
 			minRequests = counter
