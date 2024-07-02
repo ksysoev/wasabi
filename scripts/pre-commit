@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+./scripts/check_versions.sh
+./scripts/check_lint.sh
+
+echo "CGO_ENABLED = $CGO_ENABLED"
+
+if [ "$CGO_ENABLED" -eq "0" ] || [ -z "$CGO_ENABLED" ]
+then
+    make test-norace
+else
+    make test
+fi
+
+exit 0
