@@ -130,3 +130,25 @@ func TestNewRetryMiddleware_CancelledContext_WithExponentialRetryPolicy(t *testi
 		t.Errorf("Expected error to be context.Canceled, but got %v", err)
 	}
 }
+
+func TestNewRetryMiddleware_Predicate(t *testing.T) {
+	maxRetries := 3
+	interval := time.Microsecond
+	delayFactor := 2
+	middleware := NewRetryMiddleware(ExponentialGetRetryInterval(interval, delayFactor), maxRetries, func(_ error) bool { return false })
+
+	// Create a mock request handler
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+		return fmt.Errorf("mock error")
+	})
+
+	// Create a mock connection and request
+	mockConn := mocks.NewMockConnection(t)
+	mockReq := mocks.NewMockRequest(t)
+
+	// Test with failed request
+	err := middleware(mockHandler).Handle(mockConn, mockReq)
+	if err.Error() != "mock error" {
+		t.Errorf("Expected error to be mock error, but got %v", err)
+	}
+}
