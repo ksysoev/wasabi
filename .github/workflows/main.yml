@@ -34,7 +34,7 @@ jobs:
         run: go test -coverprofile=coverage.out -covermode=atomic -v -race ./...
       - name: Prepare coverage reports
         run: |
-          cat coverage.out | grep -v "/wasabi/mocks/" | grep -v "/wasabi/examples" > coverage.final.out
+          cat coverage.out | grep -v "/wasabi/tests/assert.go" | grep -v "/wasabi/mocks/" | grep -v "/wasabi/examples" > coverage.final.out
           mv coverage.final.out coverage.out
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
