@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ksysoev/wasabi/tests"
+
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +26,7 @@ func TestNewSpanMiddleware_TracerNotInitialized(t *testing.T) {
 	req1, _ := http.NewRequest("GET", "/", http.NoBody)
 	w1 := httptest.NewRecorder()
 
-	assertPanic(t, func() { handler.ServeHTTP(w1, req1) }, "NewSpanMiddleware called without initializing Tracer! Are you used NewTracedMiddleware too?")
+	tests.AssertPanic(t, func() { handler.ServeHTTP(w1, req1) }, "NewSpanMiddleware called without initializing Tracer! Are you used NewTracedMiddleware too?")
 }
 
 func TestNewSpanMiddleware_WithTracer(t *testing.T) {
@@ -49,8 +51,6 @@ func TestNewSpanMiddleware_WithTracer(t *testing.T) {
 
 	span := trace.SpanFromContext(req1.Context())
 
-	span.End()
-
 	defer resp1.Body.Close()
 
 	// assert request is successul
@@ -62,17 +62,4 @@ func TestNewSpanMiddleware_WithTracer(t *testing.T) {
 	if span.IsRecording() != false {
 		t.Errorf("Since span has ended it should not record anymore")
 	}
-}
-
-func assertPanic(t *testing.T, f func(), expectedError string) {
-	t.Helper()
-
-	defer func() {
-		err := recover()
-		if err != expectedError {
-			t.Errorf("The code did not panic with expected error. Got: %s", err)
-		}
-	}()
-
-	f()
 }

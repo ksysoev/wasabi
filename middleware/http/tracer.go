@@ -2,7 +2,7 @@ package http
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/otel"
@@ -24,7 +24,7 @@ func NewTracedMiddleware(exporter func(ctx context.Context) (sdktrace.SpanExport
 			// setup opentelemtry exporter and provider
 			exp, err := exporter(r.Context())
 			if err != nil {
-				log.Fatalf("failed to initialize exporter: %v", err)
+				panic(fmt.Sprintf("failed to initialize exporter: %v", err))
 			}
 
 			tp := newTraceProvider(exp)
