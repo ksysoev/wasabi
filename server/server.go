@@ -30,23 +30,30 @@ import (
 	"sync"
 
 	"github.com/ksysoev/wasabi"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/exp/slog"
 )
 
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
-	certPath     string
-	keyPath      string
-	baseCtx      context.Context
-	listener     net.Listener
-	listenerLock *sync.Mutex
-	mutex        *sync.Mutex
-	handler      *http.Server
-	ready        chan<- struct{}
-	addr         string
-	channels     []wasabi.Channel
-	pprofEnabled bool
+	listener       net.Listener
+	Tracer         trace.Tracer
+	baseCtx        context.Context
+	handler        *http.Server
+	listenerLock   *sync.Mutex
+	mutex          *sync.Mutex
+	ready          chan<- struct{}
+	TracerProvider *sdktrace.TracerProvider
+	certPath       string
+	addr           string
+	keyPath        string
+	channels       []wasabi.Channel
+	pprofEnabled   bool
 }
 
 type Option func(*Server)
@@ -175,6 +182,10 @@ func (s *Server) Close(ctx ...context.Context) error {
 	go func() {
 		defer close(done)
 
+		if s.TracerProvider != nil {
+			_ = s.TracerProvider.Shutdown(ctx[0])
+		}
+
 		if len(ctx) > 0 {
 			done <- s.handler.Shutdown(ctx[0])
 			return
@@ -266,4 +277,45 @@ func WithServerConfig(config Config) Option {
 	return func(s *Server) {
 		s.baseCtx = context.WithValue(s.baseCtx, ctxConfigKey{}, config)
 	}
+}
+
+// WithTracer is an option function that initializes an opentelemtry tracer for the server requests.
+// It takes the following parameter:
+//
+//	an `exporter` function argument. This function is used to set the otel exporter of your choice for tracing.
+//	Please refer to https://opentelemetry.io/docs/languages/go/exporters/ to know choices.
+//
+// Adding a tracer option is a must if you want to create a span for your requests.
+func WithTracer(exporter func(ctx context.Context) (sdktrace.SpanExporter, error)) Option {
+	return func(s *Server) {
+		exp, err := exporter(s.baseCtx)
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize exporter: %v", err))
+		}
+
+		s.TracerProvider = newTraceProvider(exp)
+		otel.SetTracerProvider(s.TracerProvider)
+		s.Tracer = s.TracerProvider.Tracer("Wasabi")
+	}
+}
+
+// This merge logic ensures that semconv works as expected and that the version from the exportor matches the provider
+// please see - https://github.com/open-telemetry/opentelemetry-go/issues/4476
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceName("Wasabi"),
+		),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	)
 }

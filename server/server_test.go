@@ -13,6 +13,9 @@ import (
 	_ "net/http/pprof" //nolint:gosec // pprof is used for testing profile endpoint
 
 	"github.com/ksysoev/wasabi/mocks"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 type testCtxKey string
@@ -440,5 +443,19 @@ func TestServer_WithProfilerEndpoint(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code 200, but got %d", resp.StatusCode)
+	}
+}
+
+func TestServer_WithTracer(t *testing.T) {
+	server := NewServer(":0", WithTracer(func(ctx context.Context) (sdktrace.SpanExporter, error) {
+		return stdouttrace.New()
+	}))
+
+	if server.Tracer == nil {
+		t.Error("Expected non-nil server.Tracer")
+	}
+
+	if server.TracerProvider != nil && otel.GetTracerProvider() != server.TracerProvider {
+		t.Errorf("Expected server.TracerProvider to be globally set but got: %+v", server.TracerProvider)
 	}
 }

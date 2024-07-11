@@ -1,7 +1,6 @@
-package http
+package request
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,27 +19,26 @@ func TestNewSpanMiddleware_TracerNotInitialized(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	middleware := NewSpanMiddleware(spanName)
+	middleware := NewSpanMiddleware(spanName, nil)
 	handler := middleware(nextHandler)
 
 	req1, _ := http.NewRequest("GET", "/", http.NoBody)
 	w1 := httptest.NewRecorder()
 
-	tests.AssertPanic(t, func() { handler.ServeHTTP(w1, req1) }, "NewSpanMiddleware called without initializing Tracer! Are you used NewTracedMiddleware too?")
+	tests.AssertPanic(t, func() { handler.ServeHTTP(w1, req1) }, "NewSpanMiddleware called without initializing Tracer! Have you specified `WithTracer` server option?")
 }
 
 func TestNewSpanMiddleware_WithTracer(t *testing.T) {
 	spanName := "test-span"
-	exporter := func(_ context.Context) (sdktrace.SpanExporter, error) {
-		return stdouttrace.New()
-	}
+	exp, _ := stdouttrace.New()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exp))
+	tracer := tp.Tracer("test-tracer")
 
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	middleware1 := NewTracedMiddleware(exporter)
-	middleware2 := NewSpanMiddleware(spanName)
-	handler := middleware1(middleware2(nextHandler))
+	middleware := NewSpanMiddleware(spanName, tracer)
+	handler := middleware(nextHandler)
 
 	req1, _ := http.NewRequest("GET", "/", http.NoBody)
 	w1 := httptest.NewRecorder()
