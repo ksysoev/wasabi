@@ -1,59 +1,70 @@
 package request
 
 import (
-	"net/http"
-	"net/http/httptest"
+	"context"
+	"fmt"
 	"testing"
-
-	"github.com/ksysoev/wasabi/tests"
 
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/dispatch"
+	"github.com/ksysoev/wasabi/mocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewSpanMiddleware_TracerNotInitialized(t *testing.T) {
-	spanName := "test-span"
+	mockConn := mocks.NewMockConnection(t)
+	mockReq := mocks.NewMockRequest(t)
 
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+		return nil
 	})
 
+	spanName := "test-span"
+
 	middleware := NewSpanMiddleware(spanName, nil)
-	handler := middleware(nextHandler)
+	handler := middleware(mockHandler)
 
-	req1, _ := http.NewRequest("GET", "/", http.NoBody)
-	w1 := httptest.NewRecorder()
+	panicFunction := func() {
+		err := handler.Handle(mockConn, mockReq)
+		if err != nil {
+			fmt.Printf("Got error: %+v", err)
+		}
+	}
 
-	tests.AssertPanic(t, func() { handler.ServeHTTP(w1, req1) }, "NewSpanMiddleware called without initializing Tracer! Have you specified `WithTracer` server option?")
+	assert.Panicsf(t, panicFunction, "NewSpanMiddleware called without initializing Tracer! Have you specified `WithTracer` server option?")
 }
 
 func TestNewSpanMiddleware_WithTracer(t *testing.T) {
+	ctx := context.Background()
 	spanName := "test-span"
 	exp, _ := stdouttrace.New()
 	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exp))
 	tracer := tp.Tracer("test-tracer")
 
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	mockConn := mocks.NewMockConnection(t)
+	mockReq := mocks.NewMockRequest(t)
+
+	mockReq.EXPECT().Context().Return(ctx)
+	mockReq.EXPECT().WithContext(mock.AnythingOfType("*context.valueCtx")).Return(mockReq)
+
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+		return nil
 	})
+
 	middleware := NewSpanMiddleware(spanName, tracer)
-	handler := middleware(nextHandler)
+	handler := middleware(mockHandler)
 
-	req1, _ := http.NewRequest("GET", "/", http.NoBody)
-	w1 := httptest.NewRecorder()
+	span := trace.SpanFromContext(mockReq.Context())
 
-	handler.ServeHTTP(w1, req1)
+	err := handler.Handle(mockConn, mockReq)
 
-	resp1 := w1.Result()
-
-	span := trace.SpanFromContext(req1.Context())
-
-	defer resp1.Body.Close()
-
-	// assert request is successul
-	if resp1.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d, got %d", http.StatusOK, resp1.StatusCode)
+	if err != nil {
+		t.Errorf("Did not expect error but got: %+v", err)
 	}
 
 	// assert span attributes

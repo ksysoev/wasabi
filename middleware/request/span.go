@@ -1,9 +1,10 @@
 package request
 
 import (
-	"net/http"
 	"time"
 
+	"github.com/ksysoev/wasabi"
+	"github.com/ksysoev/wasabi/dispatch"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -12,19 +13,19 @@ import (
 // It takes the `spanName` and `attributes` as an argument. The attributes are essentially key value tuples used to set
 // the span's attributes during creation.
 // This middleware must be used in conjunction after the `NewTracedMiddleware`
-func NewSpanMiddleware(spanName string, tracer trace.Tracer, attributes ...attribute.KeyValue) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func NewSpanMiddleware(spanName string, tracer trace.Tracer, attributes ...attribute.KeyValue) func(next wasabi.RequestHandler) wasabi.RequestHandler {
+	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
+		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			if tracer == nil {
 				panic("NewSpanMiddleware called without initializing Tracer! Have you specified `WithTracer` server option?")
 			}
 
-			ctx, span := tracer.Start(r.Context(), spanName, trace.WithAttributes(attributes...))
+			ctx, span := tracer.Start(req.Context(), spanName, trace.WithAttributes(attributes...))
 			defer span.End()
 
 			span.AddEvent("span created", trace.WithAttributes(attribute.Int64("createdAt", time.Now().UnixMilli())))
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			return next.Handle(conn, req.WithContext(ctx))
 		})
 	}
 }
