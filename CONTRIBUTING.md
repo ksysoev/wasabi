@@ -16,6 +16,12 @@ A good branch name would be (where issue #123 is the ticket you're working on):
 git checkout -b 123-add-contributors-guidelines
 ```
 
+## Install the project
+To help you with your development environment, you can install some tools with
+```
+make install
+```
+
 ## Get the test suite running
 
 Make sure you're using the latest version of Go. Then, run the test suite to ensure everything is working correctly:

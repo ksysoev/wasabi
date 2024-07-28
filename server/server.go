@@ -36,15 +36,15 @@ import (
 var ErrServerAlreadyRunning = fmt.Errorf("server is already running")
 
 type Server struct {
-	certPath     string
-	keyPath      string
-	baseCtx      context.Context
 	listener     net.Listener
+	baseCtx      context.Context
+	handler      *http.Server
 	listenerLock *sync.Mutex
 	mutex        *sync.Mutex
-	handler      *http.Server
 	ready        chan<- struct{}
+	certPath     string
 	addr         string
+	keyPath      string
 	channels     []wasabi.Channel
 	pprofEnabled bool
 }
