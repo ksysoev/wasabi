@@ -37,7 +37,7 @@ func main() {
 	backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		httpReq, err := http.NewRequest("POST", "http://localhost:8081/", bytes.NewBuffer(req.Data()))
 		if err != nil {
-			slog.Error("GOT ERROR AS - %s", err)
+			slog.Error("GOT ERROR AS - %s", slog.Any("error", err))
 			return nil, err
 		}
 

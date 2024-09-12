@@ -77,7 +77,7 @@ func TestNewClientIPMiddleware(t *testing.T) {
 
 	var ctx context.Context
 
-	handler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		ctx = r.Context()
 	})
 
