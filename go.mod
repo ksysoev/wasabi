@@ -4,14 +4,14 @@ go 1.22.1
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/jellydator/ttlcache/v3 v3.2.0
+	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/ksysoev/ratestor v0.1.0
 	github.com/sony/gobreaker/v2 v2.0.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/trace v1.30.0
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	nhooyr.io/websocket v1.8.17
 )
 
