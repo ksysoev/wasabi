@@ -56,9 +56,10 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 
 				var resp responseCache
 
-				connWrapper := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(func(conn wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
+				connWrapper := channel.NewConnectionWrapper(conn, channel.WithSendWrapper(func(_ wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
 					resp.data = msg
 					resp.msgType = msgType
+
 					return nil
 				}))
 

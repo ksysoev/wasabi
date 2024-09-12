@@ -15,7 +15,7 @@ func TestNewCircuitBreakerMiddleware_ClosedState(t *testing.T) {
 	period := time.Second
 
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error { return nil })
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error { return nil })
 	mockRequest := mocks.NewMockRequest(t)
 	mockConn := mocks.NewMockConnection(t)
 
@@ -38,7 +38,7 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 	testError := fmt.Errorf("test error")
 
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(5 * time.Millisecond)
 		return testError
 	})
@@ -106,7 +106,7 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 	errorToReturn := testError
 
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(5 * time.Millisecond)
 		return errorToReturn
 	})
@@ -212,7 +212,7 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 	errorToReturn := testError
 
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		time.Sleep(5 * time.Millisecond)
 		return errorToReturn
 	})

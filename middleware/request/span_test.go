@@ -20,7 +20,7 @@ func TestNewSpanMiddleware_TracerNotInitialized(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockReq := mocks.NewMockRequest(t)
 
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		return nil
 	})
 
@@ -52,7 +52,7 @@ func TestNewSpanMiddleware_WithTracer(t *testing.T) {
 	mockReq.EXPECT().Context().Return(ctx)
 	mockReq.EXPECT().WithContext(mock.AnythingOfType("*context.valueCtx")).Return(mockReq)
 
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		return nil
 	})
 

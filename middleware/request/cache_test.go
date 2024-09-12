@@ -15,13 +15,13 @@ func TestNewCacheMiddleware(t *testing.T) {
 	// Create a mock request handler
 	testResp := []byte("testData")
 	callCounter := 0
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, _ wasabi.Request) error {
 		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
 	// Define the request cache function
-	requestCache := func(r wasabi.Request) (cacheKey string, ttl time.Duration) {
+	requestCache := func(_ wasabi.Request) (cacheKey string, ttl time.Duration) {
 		return "cacheKey", time.Second
 	}
 
@@ -50,13 +50,13 @@ func TestNewCacheMiddleware_NoCache(t *testing.T) {
 	testResp := []byte("testData")
 	callCounter := 0
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, _ wasabi.Request) error {
 		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
 	// Define the request cache function
-	requestCache := func(r wasabi.Request) (cacheKey string, ttl time.Duration) {
+	requestCache := func(_ wasabi.Request) (cacheKey string, ttl time.Duration) {
 		return "", 0
 	}
 
@@ -81,12 +81,12 @@ func TestNewCacheMiddleware_NoCache(t *testing.T) {
 
 func TestNewCacheMiddleware_Error(t *testing.T) {
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		return assert.AnError
 	})
 
 	// Define the request cache function
-	requestCache := func(r wasabi.Request) (cacheKey string, ttl time.Duration) {
+	requestCache := func(_ wasabi.Request) (cacheKey string, ttl time.Duration) {
 		return "cacheKey", time.Second
 	}
 
@@ -107,13 +107,13 @@ func TestNewCacheMiddleware_ContextCancelled(t *testing.T) {
 	// Create a mock request handler
 	testResp := []byte("testData")
 	callCounter := 0
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, _ wasabi.Request) error {
 		callCounter++
 		return conn.Send(wasabi.MsgTypeText, testResp)
 	})
 
 	// Define the request cache function
-	requestCache := func(r wasabi.Request) (cacheKey string, ttl time.Duration) {
+	requestCache := func(_ wasabi.Request) (cacheKey string, ttl time.Duration) {
 		return "cacheKey", time.Second
 	}
 

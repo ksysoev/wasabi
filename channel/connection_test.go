@@ -86,7 +86,7 @@ func TestConn_handleRequests(t *testing.T) {
 	// Mock OnMessage callback
 	received := make(chan struct{})
 
-	conn.onMessageCB = func(c wasabi.Connection, msgType wasabi.MessageType, data []byte) { received <- struct{}{} }
+	conn.onMessageCB = func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) { received <- struct{}{} }
 
 	go conn.handleRequests()
 

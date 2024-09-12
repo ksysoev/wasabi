@@ -58,8 +58,8 @@ func TestChannel_Use(t *testing.T) {
 
 	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
-	middleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	middleware := func(_ http.Handler) http.Handler {
+		return http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			// Custom middleware logic
 		})
 	}
@@ -78,19 +78,19 @@ func TestChannel_wrapMiddleware(t *testing.T) {
 	channel := NewChannel(path, dispatcher, NewConnectionRegistry())
 
 	// Create a mock handler
-	mockHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mockHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		// Mock handler logic
 	})
 
 	// Create mock middlewares
-	middleware1 := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	middleware1 := func(_ http.Handler) http.Handler {
+		return http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			// Mock middleware 1 logic
 		})
 	}
 
-	middleware2 := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	middleware2 := func(_ http.Handler) http.Handler {
+		return http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			// Mock middleware 2 logic
 		})
 	}

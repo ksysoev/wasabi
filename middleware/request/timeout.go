@@ -17,6 +17,7 @@ func NewSetTimeoutMiddleware(timeout time.Duration) func(next wasabi.RequestHand
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			ctx := req.Context()
 			ctx, cancel := context.WithTimeout(ctx, timeout)
+
 			defer cancel()
 
 			req = req.WithContext(ctx)

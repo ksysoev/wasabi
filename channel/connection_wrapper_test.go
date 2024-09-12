@@ -128,7 +128,7 @@ func TestConnectionWrapper_WithSendWrapper(t *testing.T) {
 		t.Error("Expected onSendWrapper to be nil")
 	}
 
-	cb := func(conn wasabi.Connection, msgType wasabi.MessageType, msg []byte) error {
+	cb := func(_ wasabi.Connection, _ wasabi.MessageType, _ []byte) error {
 		return nil
 	}
 
@@ -147,7 +147,7 @@ func TestConnectionWrapper_WithCloseWrapper(t *testing.T) {
 		t.Error("Expected onCloseWrapper to be nil")
 	}
 
-	cb := func(conn wasabi.Connection, status websocket.StatusCode, reason string, closingCtx ...context.Context) error {
+	cb := func(_ wasabi.Connection, _ websocket.StatusCode, _ string, _ ...context.Context) error {
 		return nil
 	}
 

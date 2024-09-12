@@ -17,7 +17,7 @@ func TestNewTrottlerMiddleware(t *testing.T) {
 	middleware := NewTrottlerMiddleware(limit)
 
 	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, req wasabi.Request) error {
 		select {
 		case <-req.Context().Done():
 			return nil
@@ -56,7 +56,7 @@ func TestNewTrottlerMiddleware(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
-	mockHandlerInstant := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandlerInstant := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		return nil
 	})
 

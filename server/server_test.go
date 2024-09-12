@@ -179,7 +179,7 @@ func TestServer_Run(t *testing.T) {
 
 			channel := mocks.NewMockChannel(t)
 			channel.EXPECT().Path().Return("/test")
-			channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			channel.EXPECT().Handler().Return(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 
 			server.AddChannel(channel)
 
@@ -236,7 +236,7 @@ func TestServer_Close(t *testing.T) {
 	// Create a mock channel
 	channel := mocks.NewMockChannel(t)
 	channel.EXPECT().Path().Return("/test")
-	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	channel.EXPECT().Handler().Return(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	channel.EXPECT().Close(ctx).Return(nil)
 
 	server.AddChannel(channel)
@@ -283,7 +283,7 @@ func TestServer_Close_NoContext(t *testing.T) {
 	// Create a mock channel
 	channel := mocks.NewMockChannel(t)
 	channel.EXPECT().Path().Return("/test")
-	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	channel.EXPECT().Handler().Return(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	channel.EXPECT().Close().Return(nil)
 
 	server.AddChannel(channel)
@@ -332,7 +332,7 @@ func TestServer_Addr(t *testing.T) {
 	// Create a mock channel
 	channel := mocks.NewMockChannel(t)
 	channel.EXPECT().Path().Return("/test")
-	channel.EXPECT().Handler().Return(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	channel.EXPECT().Handler().Return(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	channel.EXPECT().Close().Return(nil)
 
 	server.AddChannel(channel)
@@ -365,9 +365,8 @@ func TestServer_WithTLS(t *testing.T) {
 	certPath := "/path/to/cert.pem"
 	keyPath := "/path/to/key.pem"
 
-	// #nosec G402 - InsecureSkipVerify is used for testing purposes
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // #nosec G402 - InsecureSkipVerify is used for testing purposes
 	}
 
 	WithTLS(certPath, keyPath, tlsConfig)(server)

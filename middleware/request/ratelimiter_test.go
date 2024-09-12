@@ -11,12 +11,12 @@ import (
 
 func TestNewRateLimiterMiddleware(t *testing.T) {
 	// Mock requestLimit function
-	requestLimit := func(req wasabi.Request) (string, time.Duration, uint64) {
+	requestLimit := func(_ wasabi.Request) (string, time.Duration, uint64) {
 		return "test_key", time.Second, 10
 	}
 
 	// Mock next RequestHandler
-	next := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	next := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		// Mock implementation of next handler
 		return nil
 	})

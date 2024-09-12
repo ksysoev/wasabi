@@ -13,7 +13,7 @@ import (
 
 func TestNewSetTimeoutMiddleware(t *testing.T) {
 	timeout := 5 * time.Second
-	handler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	handler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		// Your custom handler logic here
 		return nil
 	})

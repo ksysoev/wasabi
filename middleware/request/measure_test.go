@@ -24,7 +24,7 @@ func TestNewMeasurer(t *testing.T) {
 	}
 
 	// Define a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		// Simulate some processing time
 		time.Sleep(100 * time.Microsecond)
 		return nil

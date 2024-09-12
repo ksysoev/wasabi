@@ -23,7 +23,7 @@ func TestHandle_Success(t *testing.T) {
 
 	// Create a new QueueBackend instance
 	onRequest := make(chan string)
-	b := NewQueueBackend(func(conn wasabi.Connection, req wasabi.Request, id string) error {
+	b := NewQueueBackend(func(_ wasabi.Connection, _ wasabi.Request, id string) error {
 		onRequest <- id
 		return nil
 	})
@@ -71,7 +71,7 @@ func TestHandle_Timeout(t *testing.T) {
 
 	// Create a new QueueBackend instance
 	onRequest := make(chan string)
-	b := NewQueueBackend(func(conn wasabi.Connection, req wasabi.Request, id string) error {
+	b := NewQueueBackend(func(_ wasabi.Connection, _ wasabi.Request, id string) error {
 		onRequest <- id
 		return nil
 	})
@@ -119,7 +119,7 @@ func TestHandle_ErrorSendingRequest(t *testing.T) {
 	r.EXPECT().Context().Return(ctx)
 
 	// Create a new QueueBackend instance
-	b := NewQueueBackend(func(conn wasabi.Connection, req wasabi.Request, id string) error {
+	b := NewQueueBackend(func(_ wasabi.Connection, _ wasabi.Request, _ string) error {
 		return expectedError
 	})
 
@@ -152,7 +152,7 @@ func TestHandle_ErrorConnectionClosed(t *testing.T) {
 
 	// Create a new QueueBackend instance
 	onRequest := make(chan string)
-	b := NewQueueBackend(func(conn wasabi.Connection, req wasabi.Request, id string) error {
+	b := NewQueueBackend(func(_ wasabi.Connection, _ wasabi.Request, id string) error {
 		onRequest <- id
 		return nil
 	})

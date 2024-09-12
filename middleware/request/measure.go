@@ -20,6 +20,7 @@ func NewMeasurer(saveMetric func(req wasabi.Request, err error, duration time.Du
 			duration := time.Since(start)
 
 			saveMetric(req, err, duration)
+
 			return err
 		})
 	}

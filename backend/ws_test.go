@@ -48,7 +48,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 
 func TestNewWSBackend(t *testing.T) {
 	url := "ws://example.com"
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -70,7 +70,7 @@ func TestGetConnectionExistingConnection(t *testing.T) {
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -95,7 +95,7 @@ func TestGetConnectionNewConnection(t *testing.T) {
 	defer server.Close()
 	url := "ws://" + server.Listener.Addr().String()
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -122,7 +122,7 @@ func TestGetConnectionDialError(t *testing.T) {
 	url := "ws://" + server.Listener.Addr().String()
 	server.Close()
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -184,7 +184,7 @@ func TestWSBackend_Handle_FailToConnect(t *testing.T) {
 
 	r := mocks.NewMockRequest(t)
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -209,7 +209,7 @@ func TestWSBackend_Handle_CloseConnection(t *testing.T) {
 
 	conn.EXPECT().Close(websocket.StatusNormalClosure, "connection closed").Return(nil)
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return websocket.MessageText, []byte("Hello, world!"), nil
 	})
 
@@ -250,7 +250,7 @@ func TestWSBackend_RequestFactory_Error(t *testing.T) {
 
 	r := mocks.NewMockRequest(t)
 
-	b := NewWSBackend(url, func(r wasabi.Request) (websocket.MessageType, []byte, error) {
+	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
 		return 0, nil, io.EOF
 	})
 

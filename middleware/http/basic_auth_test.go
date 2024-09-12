@@ -12,7 +12,7 @@ func TestNewBasicAuthMiddleware(t *testing.T) {
 		"user":  "123456",
 	}
 	realm := "Test Realm"
-	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 

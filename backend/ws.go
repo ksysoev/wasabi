@@ -67,6 +67,7 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 	uws, err, _ := b.group.Do(conn.ID(), func() (interface{}, error) {
 		fmt.Println("Connecting to", b.URL, "for connection", conn.ID())
 		c, resp, err := websocket.Dial(conn.Context(), b.URL, nil)
+
 		if err != nil {
 			return nil, err
 		}

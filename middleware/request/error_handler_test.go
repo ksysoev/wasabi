@@ -11,7 +11,7 @@ import (
 
 func TestNewErrorHandlingMiddleware(t *testing.T) {
 	// Define a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
 		// Simulate an error
 		return errors.New("mock error")
 	})

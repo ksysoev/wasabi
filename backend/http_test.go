@@ -15,7 +15,7 @@ import (
 )
 
 func TestNewBackend(t *testing.T) {
-	factory := func(req wasabi.Request) (*http.Request, error) {
+	factory := func(_ wasabi.Request) (*http.Request, error) {
 		return nil, nil
 	}
 
@@ -32,7 +32,7 @@ func TestNewBackend(t *testing.T) {
 }
 
 func TestHTTPBackend_Handle(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`OK`))
 	}))
 	defer server.Close()
@@ -48,9 +48,11 @@ func TestHTTPBackend_Handle(t *testing.T) {
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
 		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
+
 		if err != nil {
 			return nil, err
 		}
+
 		return httpReq, nil
 	})
 
@@ -63,7 +65,7 @@ func TestHTTPBackend_Handle(t *testing.T) {
 func TestHTTPBackend_Handle_ErrorCreatingHTTPRequest(t *testing.T) {
 	testError := errors.New("test error")
 
-	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
+	backend := NewBackend(func(_ wasabi.Request) (*http.Request, error) {
 		return nil, testError
 	})
 
@@ -79,7 +81,7 @@ func TestHTTPBackend_Handle_ErrorCreatingHTTPRequest(t *testing.T) {
 
 func TestHTTPBackend_Handle_ErrorSendingResponse(t *testing.T) {
 	expectedError := errors.New("test error")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`OK`))
 	}))
 
@@ -96,9 +98,11 @@ func TestHTTPBackend_Handle_ErrorSendingResponse(t *testing.T) {
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
 		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
+
 		if err != nil {
 			return nil, err
 		}
+
 		return httpReq, nil
 	})
 
@@ -109,7 +113,7 @@ func TestHTTPBackend_Handle_ErrorSendingResponse(t *testing.T) {
 }
 
 func TestHTTPBackend_Handle_ErrorConnectionClosed(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`OK`))
 	}))
 	defer server.Close()
@@ -125,9 +129,11 @@ func TestHTTPBackend_Handle_ErrorConnectionClosed(t *testing.T) {
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
 		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
+
 		if err != nil {
 			return nil, err
 		}
+
 		return httpReq, nil
 	})
 
@@ -138,9 +144,10 @@ func TestHTTPBackend_Handle_ErrorConnectionClosed(t *testing.T) {
 }
 
 func TestHTTPBackend_Handle_TimeoutRequestByContext(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		// Sleep for 1 second
 		<-time.After(10 * time.Millisecond)
+
 		_, _ = w.Write([]byte(`OK`))
 	}))
 	defer server.Close()
@@ -153,12 +160,14 @@ func TestHTTPBackend_Handle_TimeoutRequestByContext(t *testing.T) {
 
 	mockReq.EXPECT().Context().Return(ctx)
 
-	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
+	backend := NewBackend(func(_ wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString("test request")
 		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
+
 		if err != nil {
 			return nil, err
 		}
+
 		return httpReq, nil
 	})
 
