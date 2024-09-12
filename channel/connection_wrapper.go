@@ -3,8 +3,8 @@ package channel
 import (
 	"context"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
-	"nhooyr.io/websocket"
 )
 
 // WrapperOptions is a function type that represents options for configuring a ConnectionWrapper.

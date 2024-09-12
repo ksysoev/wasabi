@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
-	"nhooyr.io/websocket"
 )
 
 // Channel is default implementation of Channel

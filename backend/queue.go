@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
-	"nhooyr.io/websocket"
 )
 
 type response struct {

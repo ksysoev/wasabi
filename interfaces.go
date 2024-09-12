@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"nhooyr.io/websocket"
+	"github.com/coder/websocket"
 )
 
 type MessageType = websocket.MessageType

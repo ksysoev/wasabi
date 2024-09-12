@@ -7,9 +7,9 @@ import (
 	"io"
 	"sync"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 	"golang.org/x/sync/singleflight"
-	"nhooyr.io/websocket"
 )
 
 type WSBackend struct {

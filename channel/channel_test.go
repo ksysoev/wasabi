@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi/mocks"
-	"nhooyr.io/websocket"
 )
 
 func TestNewChannel(t *testing.T) {

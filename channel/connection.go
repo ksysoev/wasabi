@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/google/uuid"
-	"nhooyr.io/websocket"
 
 	"github.com/ksysoev/wasabi"
 )

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
-	"nhooyr.io/websocket"
 )
 
 func TestNewConnectionWrapper(t *testing.T) {

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/channel"
 	"github.com/ksysoev/wasabi/mocks"
-	"nhooyr.io/websocket"
 )
 
 func TestHandle_Success(t *testing.T) {

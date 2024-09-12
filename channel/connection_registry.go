@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
-	"nhooyr.io/websocket"
 )
 
 const (
