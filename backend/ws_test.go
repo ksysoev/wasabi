@@ -262,7 +262,7 @@ func TestWSBackend_RequestFactory_Error(t *testing.T) {
 	}
 }
 func TestWithWSDialler(t *testing.T) {
-	customDialer := func(ctx context.Context, baseURL string) (*websocket.Conn, error) {
+	customDialer := func(_ context.Context, _ string) (*websocket.Conn, error) {
 		return nil, assert.AnError
 	}
 
