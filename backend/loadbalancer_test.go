@@ -10,7 +10,7 @@ import (
 func TestNewLoadBalancer(t *testing.T) {
 	backends := []struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{{
 		Handler: mocks.NewMockBackend(t),
 		Weight:  1,
@@ -23,7 +23,7 @@ func TestNewLoadBalancer(t *testing.T) {
 
 	backends = append(backends, struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{mocks.NewMockBackend(t), 1})
 
 	lb, err := NewLoadBalancer(backends)
@@ -49,7 +49,7 @@ func TestNewLoadBalancer(t *testing.T) {
 func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
 	backends := []struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{{
 		Handler: mocks.NewMockBackend(t),
 		Weight:  1,
@@ -78,7 +78,7 @@ func TestLoadBalancer_getLeastBusyNode(t *testing.T) {
 func TestLoadBalancer_getLeastBusyNodeWeighted(t *testing.T) {
 	backends := []struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{{
 		Handler: mocks.NewMockBackend(t),
 		Weight:  1,
@@ -108,7 +108,7 @@ func TestLoadBalancer_getLeastBusyNodeWeighted(t *testing.T) {
 func TestLoadBalancer_getLeastBusyNodeZeroWeight(t *testing.T) {
 	backends := []struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{{
 		Handler: mocks.NewMockBackend(t),
 		Weight:  0,
@@ -134,13 +134,13 @@ func TestLoadBalancer_getLeastBusyNodeZeroWeight(t *testing.T) {
 func TestLoadBalancer_Handle(t *testing.T) {
 	firstBackend := struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{Handler: mocks.NewMockBackend(t), Weight: 1}
 
 	// Create mock backends for testing
 	backends := []struct {
 		Handler wasabi.RequestHandler
-		Weight  uint
+		Weight  int32
 	}{firstBackend, {
 		Handler: mocks.NewMockBackend(t),
 		Weight:  1,

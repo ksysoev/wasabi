@@ -15,7 +15,7 @@ const minRequiredBackends = 2
 type LoadBalancerNode struct {
 	backend wasabi.RequestHandler
 	counter atomic.Int32
-	weight  uint
+	weight  int32
 }
 
 type LoadBalancer struct {
@@ -31,7 +31,7 @@ type LoadBalancer struct {
 // Note: handlers with zero weight will be ignored and will be not considered for load balancing
 func NewLoadBalancer(backends []struct {
 	Handler wasabi.RequestHandler
-	Weight  uint
+	Weight  int32
 }) (*LoadBalancer, error) {
 	if len(backends) < minRequiredBackends {
 		return nil, ErrNotEnoughBackends
@@ -75,7 +75,7 @@ func (lb *LoadBalancer) getLeastBusyNode() *LoadBalancerNode {
 			continue
 		}
 
-		counter := b.counter.Load() / int32(b.weight)
+		counter := b.counter.Load() / b.weight
 
 		if counter < minRequests {
 			minRequests = counter

@@ -21,20 +21,20 @@ type WSBackend struct {
 	connections map[string]*websocket.Conn
 	lock        *sync.RWMutex
 	factory     WSRequestFactory
-	URL         string
 	dialer      WSDialler
+	URL         string
 }
 
 type WSRequestFactory func(r wasabi.Request) (websocket.MessageType, []byte, error)
 
 // NewWSBackend creates a new instance of WSBackend with the specified URL.
-func NewWSBackend(base_url string, factory WSRequestFactory, opts ...WSBackendOptions) *WSBackend {
+func NewWSBackend(baseURL string, factory WSRequestFactory, opts ...WSBackendOptions) *WSBackend {
 	b := &WSBackend{
 		group:       &singleflight.Group{},
 		connections: make(map[string]*websocket.Conn),
 		lock:        &sync.RWMutex{},
 		factory:     factory,
-		URL:         base_url,
+		URL:         baseURL,
 		dialer:      dialler,
 	}
 
