@@ -11,6 +11,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -258,5 +259,24 @@ func TestWSBackend_RequestFactory_Error(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("Expected error, but got nil")
+	}
+}
+func TestWithWSDialler(t *testing.T) {
+	customDialer := func(ctx context.Context, baseURL string) (*websocket.Conn, error) {
+		return nil, assert.AnError
+	}
+
+	b := NewWSBackend("ws://example.com", func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
+		return websocket.MessageText, []byte("Hello, world!"), nil
+	}, WithWSDialler(customDialer))
+
+	if b.dialer == nil {
+		t.Fatal("Expected dialer to be set, but got nil")
+	}
+
+	_, err := b.dialer(context.Background(), "ws://example.com")
+
+	if !assert.ErrorIs(t, err, assert.AnError) {
+		t.Errorf("Expected dialer to return an error, but got %v", err)
 	}
 }
