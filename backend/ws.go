@@ -2,8 +2,8 @@ package backend
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 
@@ -12,25 +12,37 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+type WSBackendOptions func(*WSBackend)
+
+type WSDialler func(ctx context.Context, baseURL string) (*websocket.Conn, error)
+
 type WSBackend struct {
 	group       *singleflight.Group
 	connections map[string]*websocket.Conn
 	lock        *sync.RWMutex
 	factory     WSRequestFactory
 	URL         string
+	dialer      WSDialler
 }
 
 type WSRequestFactory func(r wasabi.Request) (websocket.MessageType, []byte, error)
 
 // NewWSBackend creates a new instance of WSBackend with the specified URL.
-func NewWSBackend(url string, factory WSRequestFactory) *WSBackend {
-	return &WSBackend{
+func NewWSBackend(base_url string, factory WSRequestFactory, opts ...WSBackendOptions) *WSBackend {
+	b := &WSBackend{
 		group:       &singleflight.Group{},
 		connections: make(map[string]*websocket.Conn),
 		lock:        &sync.RWMutex{},
 		factory:     factory,
-		URL:         url,
+		URL:         base_url,
+		dialer:      dialler,
 	}
+
+	for _, opt := range opts {
+		opt(b)
+	}
+
+	return b
 }
 
 // Handle handles the incoming request from the WebSocket connection.
@@ -65,7 +77,6 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 	}
 
 	uws, err, _ := b.group.Do(conn.ID(), func() (interface{}, error) {
-		fmt.Println("Connecting to", b.URL, "for connection", conn.ID())
 		c, resp, err := websocket.Dial(conn.Context(), b.URL, nil)
 
 		if err != nil {
@@ -148,4 +159,24 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 	}
 
 	err = ctx.Err()
+}
+
+func dialler(ctx context.Context, baseURL string) (*websocket.Conn, error) {
+	c, resp, err := websocket.Dial(ctx, baseURL, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	return c, nil
+}
+
+func WithWSDialler(dialer WSDialler) WSBackendOptions {
+	return func(b *WSBackend) {
+		b.dialer = dialer
+	}
 }
