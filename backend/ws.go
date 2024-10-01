@@ -79,6 +79,7 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 	uws, err, _ := b.group.Do(conn.ID(), func() (interface{}, error) {
 		c, err := b.dialer(conn.Context(), b.URL)
 		if err != nil {
+			_ = conn.Close(websocket.StatusInternalError, "Internal Server Error")
 			return nil, err
 		}
 
