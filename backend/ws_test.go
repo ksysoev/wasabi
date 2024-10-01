@@ -130,6 +130,7 @@ func TestGetConnectionDialError(t *testing.T) {
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
 	conn.EXPECT().Context().Return(context.Background())
+	conn.EXPECT().Close(websocket.StatusInternalError, "Internal Server Error").Return(nil)
 
 	_, err := b.getConnection(conn)
 	if err == nil {
@@ -182,6 +183,7 @@ func TestWSBackend_Handle_FailToConnect(t *testing.T) {
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
 	conn.EXPECT().Context().Return(context.Background())
+	conn.EXPECT().Close(websocket.StatusInternalError, "Internal Server Error").Return(nil)
 
 	r := mocks.NewMockRequest(t)
 
