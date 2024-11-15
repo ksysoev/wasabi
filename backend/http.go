@@ -65,18 +65,9 @@ func (b *HTTPBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 
 	defer resp.Body.Close()
 
-	length := 0
-	if resp.ContentLength > 0 {
-		length = int(resp.ContentLength)
-	} else {
-		return fmt.Errorf("response content length is unknown")
-	}
-
-	body := make([]byte, length)
-	_, err = resp.Body.Read(body)
-
-	if err != nil && err != io.EOF {
-		return err
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	if err := conn.Send(wasabi.MsgTypeText, body); err != nil {
