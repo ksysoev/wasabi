@@ -98,3 +98,26 @@ func TestNewClientIPMiddleware(t *testing.T) {
 		t.Errorf("Expected IP to be 192.168.0.2, but got %s", ip)
 	}
 }
+
+func TestGetClientIP(t *testing.T) {
+	// Test with IP in context
+	ctx := context.WithValue(context.Background(), ClientIP, "192.168.0.1")
+
+	if ip := GetClientIP(ctx); ip != "192.168.0.1" {
+		t.Errorf("Expected IP to be 192.168.0.1, but got %s", ip)
+	}
+
+	// Test with no IP in context
+	ctx = context.Background()
+
+	if ip := GetClientIP(ctx); ip != "" {
+		t.Errorf("Expected IP to be empty, but got %s", ip)
+	}
+
+	// Test with non-string value in context
+	ctx = context.WithValue(context.Background(), ClientIP, 12345)
+
+	if ip := GetClientIP(ctx); ip != "" {
+		t.Errorf("Expected IP to be empty, but got %s", ip)
+	}
+}

@@ -21,3 +21,14 @@ func NewStashMiddleware() func(next http.Handler) http.Handler {
 		})
 	}
 }
+
+// GetStash retrieves the stash from the provided context.
+// It takes a single parameter ctx of type context.Context.
+// It returns a pointer to a sync.Map representing the stash if found, otherwise nil.
+func GetStash(ctx context.Context) *sync.Map {
+	if stash, ok := ctx.Value(Stash).(*sync.Map); ok {
+		return stash
+	}
+
+	return nil
+}

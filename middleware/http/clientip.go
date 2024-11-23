@@ -35,6 +35,17 @@ func NewClientIPMiddleware(provider Provider) func(next http.Handler) http.Handl
 	}
 }
 
+// GetClientIP retrieves the client IP address from the provided context.
+// It takes a single parameter ctx of type context.Context.
+// It returns a string representing the client IP address if found, otherwise an empty string.
+func GetClientIP(ctx context.Context) string {
+	if ip, ok := ctx.Value(ClientIP).(string); ok {
+		return ip
+	}
+
+	return ""
+}
+
 func getIPFromRequest(provider Provider, r *http.Request) string {
 	var ip string
 
