@@ -47,7 +47,6 @@ type Server struct {
 	addr         string
 	keyPath      string
 	channels     []wasabi.Channel
-	pprofEnabled bool
 }
 
 type Option func(*Server)
@@ -139,11 +138,6 @@ func (s *Server) Run() (err error) {
 
 	for path, handler := range s.handlers {
 		mux.Handle(path, handler)
-	}
-
-	if s.pprofEnabled {
-		slog.Info("Profiler endpoint enabled on /debug/pprof/")
-		mux.Handle("/debug/pprof/", http.DefaultServeMux)
 	}
 
 	s.handler.Handler = mux
@@ -267,7 +261,8 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 // The profiler endpoint is disabled by default.
 func WithProfilerEndpoint() Option {
 	return func(s *Server) {
-		s.pprofEnabled = true
+		slog.Info("Profiler endpoint enabled on /debug/pprof/")
+		s.AddHandler("/debug/pprof/", http.DefaultServeMux)
 	}
 }
 

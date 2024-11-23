@@ -401,18 +401,8 @@ func TestServer_WithProfilerEndpoint(t *testing.T) {
 	// Create a new Server instance
 	server := NewServer(":0", WithReadinessChan(ready))
 
-	// Check if the profiler endpoint is disabled by default
-	if server.pprofEnabled {
-		t.Error("Expected profiler endpoint to be disabled")
-	}
-
 	// Apply the WithProfilerEndpoint option
 	WithProfilerEndpoint()(server)
-
-	// Check if the profiler endpoint is enabled
-	if !server.pprofEnabled {
-		t.Error("Expected profiler endpoint to be enabled")
-	}
 
 	go func() {
 		err := server.Run()
