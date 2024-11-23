@@ -3,6 +3,7 @@ package dispatch
 import (
 	"fmt"
 	"log/slog"
+	"runtime/debug"
 
 	"github.com/ksysoev/wasabi"
 )
@@ -44,6 +45,16 @@ func (d *RouterDispatcher) AddBackend(backend wasabi.RequestHandler, routingKeys
 // determining the appropriate backend, and handling the request using middleware.
 // If an error occurs during handling, it is logged.
 func (d *RouterDispatcher) Dispatch(conn wasabi.Connection, msgType wasabi.MessageType, data []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error(
+				"Panic during request handling",
+				slog.Any("error", r),
+				slog.String("stack", string(debug.Stack())),
+			)
+		}
+	}()
+
 	req := d.parser(conn, conn.Context(), msgType, data)
 
 	if req == nil {
@@ -57,7 +68,7 @@ func (d *RouterDispatcher) Dispatch(conn wasabi.Connection, msgType wasabi.Messa
 
 	err := d.useMiddleware(backend).Handle(conn, req)
 	if err != nil {
-		slog.Error("Error handling request: " + err.Error())
+		slog.Error("Error handling request", slog.Any("error", err), slog.String("routing_key", req.RoutingKey()))
 	}
 }
 
