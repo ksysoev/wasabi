@@ -7,6 +7,7 @@ import (
 
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewRouterDispatcher(t *testing.T) {
@@ -184,4 +185,21 @@ func TestRouterDispatcher_UseMiddleware(t *testing.T) {
 	if err != testError {
 		t.Errorf("Expected error %v, but got %v", testError, err)
 	}
+}
+
+func TestRouterDispatcher_PanicHandling(t *testing.T) {
+	ctx := context.Background()
+
+	mockConn := mocks.NewMockConnection(t)
+	mockConn.EXPECT().Context().Return(ctx)
+
+	defaultBackend := mocks.NewMockBackend(t)
+	parser := func(_ wasabi.Connection, _ context.Context, _ wasabi.MessageType, _ []byte) wasabi.Request {
+		panic("test panic")
+	}
+	dispatcher := NewRouterDispatcher(defaultBackend, parser)
+
+	assert.NotPanics(t, func() {
+		dispatcher.Dispatch(mockConn, wasabi.MsgTypeText, []byte("test data"))
+	})
 }
