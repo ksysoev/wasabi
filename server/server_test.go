@@ -14,6 +14,7 @@ import (
 	_ "net/http/pprof" //nolint:gosec // pprof is used for testing profile endpoint
 
 	"github.com/ksysoev/wasabi/mocks"
+	"github.com/stretchr/testify/assert"
 )
 
 type testCtxKey string
@@ -62,6 +63,12 @@ func TestServer_AddChannel(t *testing.T) {
 }
 
 func TestServer_WithBaseContext(t *testing.T) {
+	// Create a new Server instance with a base context
+	assert.Panics(t, func() {
+		//nolint:staticcheck // ignore SA1012
+		WithBaseContext(nil)
+	})
+
 	// Create a new Server instance with a base context
 	ctx := context.WithValue(context.Background(), testCtxKey("test"), "test")
 
