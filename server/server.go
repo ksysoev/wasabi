@@ -42,11 +42,11 @@ type Server struct {
 	listenerLock *sync.Mutex
 	mutex        *sync.Mutex
 	ready        chan<- struct{}
+	handlers     map[string]http.Handler
 	certPath     string
 	addr         string
 	keyPath      string
 	channels     []wasabi.Channel
-	pprofEnabled bool
 }
 
 type Option func(*Server)
@@ -76,6 +76,7 @@ func NewServer(addr string, opts ...Option) *Server {
 		mutex:        &sync.Mutex{},
 		listenerLock: &sync.Mutex{},
 		baseCtx:      context.Background(),
+		handlers:     make(map[string]http.Handler),
 	}
 
 	for _, opt := range opts {
@@ -111,6 +112,11 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 	s.channels = append(s.channels, channel)
 }
 
+// AddHandler adds new handler to server
+func (s *Server) AddHandler(path string, handler http.Handler) {
+	s.handlers[path] = handler
+}
+
 // Run starts the server
 // returns error if server is already running
 // or if server fails to start
@@ -130,9 +136,8 @@ func (s *Server) Run() (err error) {
 		)
 	}
 
-	if s.pprofEnabled {
-		slog.Info("Profiler endpoint enabled on /debug/pprof/")
-		mux.Handle("/debug/pprof/", http.DefaultServeMux)
+	for path, handler := range s.handlers {
+		mux.Handle(path, handler)
 	}
 
 	s.handler.Handler = mux
@@ -256,7 +261,8 @@ func WithTLS(certFile, keyFile string, config ...*tls.Config) Option {
 // The profiler endpoint is disabled by default.
 func WithProfilerEndpoint() Option {
 	return func(s *Server) {
-		s.pprofEnabled = true
+		slog.Info("Profiler endpoint enabled on /debug/pprof/")
+		s.AddHandler("/debug/pprof/", http.DefaultServeMux)
 	}
 }
 
