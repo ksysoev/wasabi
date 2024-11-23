@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"net/http/httptest"
 	_ "net/http/pprof" //nolint:gosec // pprof is used for testing profile endpoint
 
 	"github.com/ksysoev/wasabi/mocks"
@@ -439,5 +440,40 @@ func TestServer_WithProfilerEndpoint(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code 200, but got %d", resp.StatusCode)
+	}
+}
+
+func TestServer_AddHandler(t *testing.T) {
+	// Create a new Server instance
+	server := NewServer(":0")
+
+	// Create a new handler
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Add the handler to the server
+	server.AddHandler("/test", handler)
+
+	// Check if the handler was added correctly
+	if len(server.handlers) != 1 {
+		t.Errorf("Expected 1 handler, but got %d handlers", len(server.handlers))
+	}
+
+	if server.handlers["/test"] == nil {
+		t.Error("Expected non-nil handler")
+	}
+
+	// Check if the handler works as expected
+	req, err := http.NewRequest("GET", "/test", http.NoBody)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	rr := httptest.NewRecorder()
+	server.handlers["/test"].ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Expected status code %d, but got %d", http.StatusOK, status)
 	}
 }

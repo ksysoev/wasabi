@@ -42,6 +42,7 @@ type Server struct {
 	listenerLock *sync.Mutex
 	mutex        *sync.Mutex
 	ready        chan<- struct{}
+	handlers     map[string]http.Handler
 	certPath     string
 	addr         string
 	keyPath      string
@@ -76,6 +77,7 @@ func NewServer(addr string, opts ...Option) *Server {
 		mutex:        &sync.Mutex{},
 		listenerLock: &sync.Mutex{},
 		baseCtx:      context.Background(),
+		handlers:     make(map[string]http.Handler),
 	}
 
 	for _, opt := range opts {
@@ -111,6 +113,11 @@ func (s *Server) AddChannel(channel wasabi.Channel) {
 	s.channels = append(s.channels, channel)
 }
 
+// AddHandler adds new handler to server
+func (s *Server) AddHandler(path string, handler http.Handler) {
+	s.handlers[path] = handler
+}
+
 // Run starts the server
 // returns error if server is already running
 // or if server fails to start
@@ -128,6 +135,10 @@ func (s *Server) Run() (err error) {
 			channel.Path(),
 			channel.Handler(),
 		)
+	}
+
+	for path, handler := range s.handlers {
+		mux.Handle(path, handler)
 	}
 
 	if s.pprofEnabled {
