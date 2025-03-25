@@ -156,7 +156,7 @@ func TestWSBackend_Handle(t *testing.T) {
 		Send(websocket.MessageText, []byte("Hello, world!")).
 		Return(nil).
 		Once().
-		WaitUntil(time.After(50 * time.Millisecond)).WaitFor
+		WaitUntil(time.After(100 * time.Millisecond)).WaitFor
 
 	r := mocks.NewMockRequest(t)
 	r.EXPECT().Data().Return([]byte("Hello, world!"))
@@ -172,7 +172,11 @@ func TestWSBackend_Handle(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	<-waitForSend
+	select {
+	case <-waitForSend:
+	case <-time.After(1 * time.Second):
+		t.Error("Expected message to be sent")
+	}
 }
 
 func TestWSBackend_Handle_FailToConnect(t *testing.T) {
