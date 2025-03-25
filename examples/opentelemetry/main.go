@@ -50,11 +50,12 @@ func main() {
 		if token != "secret" {
 			return errors.New("token mismatch error")
 		}
+
 		return nil
 	})
 	spanMiddleware := request.NewSpanMiddleware("test-span", tracer)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
 	dispatcher.Use(spanMiddleware)
