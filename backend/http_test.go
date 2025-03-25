@@ -181,15 +181,26 @@ func TestWithMaxRequestsPerHost(t *testing.T) {
 
 	backend := NewBackend(nil, WithMaxRequestsPerHost(maxReqPerHost))
 
-	if backend.client.Transport.(*http.Transport).MaxConnsPerHost != maxReqPerHost {
-		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", maxReqPerHost, backend.client.Transport.(*http.Transport).MaxConnsPerHost)
+	tr, ok := backend.client.Transport.(*http.Transport)
+
+	if !ok {
+		t.Errorf("Expected client transport to be *http.Transport, but got %T", backend.client.Transport)
+	}
+
+	if tr.MaxConnsPerHost != maxReqPerHost {
+		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", maxReqPerHost, tr.MaxConnsPerHost)
 	}
 }
 
 func TestWithMaxRequestsPerHost_DefaultValue(t *testing.T) {
 	backend := NewBackend(nil)
 
-	if backend.client.Transport.(*http.Transport).MaxConnsPerHost != defaultMaxReqPerHost {
-		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", defaultMaxReqPerHost, backend.client.Transport.(*http.Transport).MaxConnsPerHost)
+	tr, ok := backend.client.Transport.(*http.Transport)
+	if !ok {
+		t.Errorf("Expected client transport to be *http.Transport, but got %T", backend.client.Transport)
+	}
+
+	if tr.MaxConnsPerHost != defaultMaxReqPerHost {
+		t.Errorf("Expected MaxConnsPerHost to be %v, but got %v", defaultMaxReqPerHost, tr.MaxConnsPerHost)
 	}
 }
