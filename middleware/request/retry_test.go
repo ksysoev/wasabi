@@ -112,6 +112,8 @@ func TestNewRetryMiddleware_CancelledContext_WithExponentialRetryPolicy(t *testi
 
 	// Create a mock request handler
 	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
+		time.Sleep(10 * time.Millisecond)
+
 		return fmt.Errorf("mock error")
 	})
 

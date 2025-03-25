@@ -132,10 +132,12 @@ func TestLoadBalancer_getLeastBusyNodeZeroWeight(t *testing.T) {
 }
 
 func TestLoadBalancer_Handle(t *testing.T) {
+	mockBackend := mocks.NewMockBackend(t)
+
 	firstBackend := struct {
 		Handler wasabi.RequestHandler
 		Weight  int32
-	}{Handler: mocks.NewMockBackend(t), Weight: 1}
+	}{Handler: mockBackend, Weight: 1}
 
 	// Create mock backends for testing
 	backends := []struct {
@@ -158,7 +160,7 @@ func TestLoadBalancer_Handle(t *testing.T) {
 	mockConn := mocks.NewMockConnection(t)
 	mockRequest := mocks.NewMockRequest(t)
 
-	firstBackend.Handler.(*mocks.MockBackend).EXPECT().Handle(mockConn, mockRequest).Return(nil)
+	mockBackend.EXPECT().Handle(mockConn, mockRequest).Return(nil)
 
 	// Call the Handle method
 	err = lb.Handle(mockConn, mockRequest)

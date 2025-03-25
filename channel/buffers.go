@@ -20,7 +20,8 @@ func newBufferPool() *bufferPool {
 }
 
 func (p *bufferPool) get() *bytes.Buffer {
-	return p.pool.Get().(*bytes.Buffer)
+	b, _ := p.pool.Get().(*bytes.Buffer)
+	return b
 }
 
 func (p *bufferPool) put(b *bytes.Buffer) {
