@@ -77,9 +77,10 @@ func TestNewCircuitBreakerMiddleware_OpenState(t *testing.T) {
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			switch err {
+			case ErrCircuitBreakerOpen:
 				OpenErrorCount++
-			} else if err == testError {
+			case testError:
 				TestErrorCount++
 			}
 
@@ -145,9 +146,10 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			switch err {
+			case ErrCircuitBreakerOpen:
 				OpenErrorCount++
-			} else if err == nil {
+			case nil:
 				SuccessCount++
 			}
 
@@ -183,9 +185,10 @@ func TestNewCircuitBreakerMiddleware_SemiOpenState(t *testing.T) {
 				continue
 			}
 
-			if err == ErrCircuitBreakerOpen {
+			switch err {
+			case ErrCircuitBreakerOpen:
 				OpenErrorCount++
-			} else if err == nil {
+			case nil:
 				SuccessCount++
 			}
 
@@ -250,9 +253,10 @@ func TestNewCircuitBreakerMiddleware_ResetMeasureInterval(t *testing.T) {
 			t.Errorf("Expected error %v, but got %v", ErrCircuitBreakerOpen, err)
 		}
 
-		if err == ErrCircuitBreakerOpen {
+		switch err {
+		case ErrCircuitBreakerOpen:
 			OpenErrorCount++
-		} else if err == nil {
+		case nil:
 			SuccessCount++
 		}
 

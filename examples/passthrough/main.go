@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	_ "net/http/pprof"
 	"os"
 
 	"github.com/ksysoev/wasabi"
@@ -19,7 +18,6 @@ const (
 )
 
 func main() {
-
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
 	backend := backend.NewWSBackend(
@@ -37,7 +35,7 @@ func main() {
 		},
 	)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, _ context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)
 	})
 	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
