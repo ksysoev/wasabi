@@ -34,7 +34,7 @@ const (
 func main() {
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
+	be := backend.NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		httpReq, err := http.NewRequest("POST", "http://localhost:8081/", bytes.NewBuffer(req.Data()))
 		if err != nil {
 			slog.Error("GOT ERROR AS - %s", slog.Any("error", err))
@@ -55,18 +55,18 @@ func main() {
 	})
 	spanMiddleware := request.NewSpanMiddleware("test-span", tracer)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+	dispatcher := dispatch.NewRouterDispatcher(be, func(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
 	dispatcher.Use(spanMiddleware)
 
-	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
-	channel.Use(protectedMiddleware)
+	ch := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	ch.Use(protectedMiddleware)
 
-	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
-	server.AddChannel(channel)
+	serv := server.NewServer(Addr, server.WithBaseContext(context.Background()))
+	serv.AddChannel(ch)
 
-	if err := server.Run(); err != nil {
+	if err := serv.Run(); err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)
 	}

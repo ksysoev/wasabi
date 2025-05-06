@@ -20,7 +20,7 @@ const (
 func main() {
 	slog.LogAttrs(context.Background(), slog.LevelDebug, "")
 
-	backend := backend.NewWSBackend(
+	be := backend.NewWSBackend(
 		"wss://ws.derivws.com/websockets/v3?app_id=1089",
 		func(r wasabi.Request) (wasabi.MessageType, []byte, error) {
 			switch r.RoutingKey() {
@@ -35,15 +35,15 @@ func main() {
 		},
 	)
 
-	dispatcher := dispatch.NewRouterDispatcher(backend, func(conn wasabi.Connection, _ context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
+	dispatcher := dispatch.NewRouterDispatcher(be, func(conn wasabi.Connection, _ context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(conn.Context(), msgType, data)
 	})
-	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	ch := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
-	server := server.NewServer(Addr, server.WithBaseContext(context.Background()))
-	server.AddChannel(channel)
+	serv := server.NewServer(Addr, server.WithBaseContext(context.Background()))
+	serv.AddChannel(ch)
 
-	if err := server.Run(); err != nil {
+	if err := serv.Run(); err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)
 	}

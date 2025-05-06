@@ -26,13 +26,13 @@ func main() {
 	dispatcher := dispatch.NewRouterDispatcher(backend, func(_ wasabi.Connection, ctx context.Context, msgType wasabi.MessageType, data []byte) wasabi.Request {
 		return dispatch.NewRawRequest(ctx, msgType, data)
 	})
-	channel := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
+	ch := channel.NewChannel("/", dispatcher, channel.NewConnectionRegistry(), channel.WithOriginPatterns("*"))
 
-	server := server.NewServer(Addr, server.WithBaseContext(context.Background()), server.WithProfilerEndpoint())
+	serv := server.NewServer(Addr, server.WithBaseContext(context.Background()), server.WithProfilerEndpoint())
 
-	server.AddChannel(channel)
+	serv.AddChannel(ch)
 
-	if err := server.Run(); err != nil {
+	if err := serv.Run(); err != nil {
 		slog.Error("Fail to start app server", "error", err)
 		os.Exit(1)
 	}
