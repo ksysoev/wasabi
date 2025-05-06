@@ -19,7 +19,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return
 	}
-	defer c.Close(websocket.StatusNormalClosure, "")
+	defer func() { _ = c.Close(websocket.StatusNormalClosure, "") }()
 
 	for {
 		_, wsr, err := c.Reader(r.Context())
@@ -156,7 +156,7 @@ func TestWSBackend_Handle(t *testing.T) {
 		Send(websocket.MessageText, []byte("Hello, world!")).
 		Return(nil).
 		Once().
-		WaitUntil(time.After(100 * time.Millisecond)).WaitFor
+		WaitUntil(time.After(500 * time.Millisecond)).WaitFor
 
 	r := mocks.NewMockRequest(t)
 	r.EXPECT().Data().Return([]byte("Hello, world!"))
@@ -226,7 +226,7 @@ func TestWSBackend_Handle_CloseConnection(t *testing.T) {
 	}
 
 	if resp.Body != nil {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	done := make(chan struct{})
