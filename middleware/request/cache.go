@@ -30,6 +30,7 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 
 	done := make(chan struct{})
 	started := make(chan struct{})
+
 	go func() {
 		close(started)
 		cache.Start()
