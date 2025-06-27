@@ -5,7 +5,7 @@ go 1.24.1
 require (
 	github.com/coder/websocket v1.8.13
 	github.com/google/uuid v1.6.0
-	github.com/jellydator/ttlcache/v3 v3.3.0
+	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/ksysoev/ratestor v0.2.0
 	github.com/sony/gobreaker/v2 v2.1.0
 	github.com/stretchr/testify v1.10.0
