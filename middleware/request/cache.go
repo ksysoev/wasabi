@@ -29,12 +29,15 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 	cache := ttlcache.New[string, responseCache]()
 
 	done := make(chan struct{})
+	started := make(chan struct{})
 	go func() {
+		close(started)
 		cache.Start()
 		close(done)
 	}()
 
 	closer := func() {
+		<-started
 		cache.Stop()
 		<-done
 	}
