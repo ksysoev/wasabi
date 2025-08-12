@@ -2,6 +2,7 @@ package request
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
@@ -28,8 +29,12 @@ type responseCache struct {
 func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
 	cache := ttlcache.New[string, responseCache]()
 	started := make(chan struct{})
+	wg := sync.WaitGroup{}
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		close(started)
 		cache.Start()
 	}()
@@ -38,6 +43,7 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 
 	closer := func() {
 		cache.Stop()
+		wg.Wait()
 	}
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
