@@ -27,20 +27,17 @@ type responseCache struct {
 // - cacheCloser: A function that stops the cache and performs cleanup.
 func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, ttl time.Duration)) (middleware func(next wasabi.RequestHandler) wasabi.RequestHandler, cacheCloser func()) {
 	cache := ttlcache.New[string, responseCache]()
-
-	done := make(chan struct{})
 	started := make(chan struct{})
 
 	go func() {
 		close(started)
 		cache.Start()
-		close(done)
 	}()
 
+	<-started
+
 	closer := func() {
-		<-started
 		cache.Stop()
-		<-done
 	}
 
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
