@@ -7,6 +7,9 @@ test-norace:
 lint:
 	golangci-lint run
 
+lint_fix:
+	golangci-lint run --fix
+
 mocks:
 	mockery --all --keeptree
 
