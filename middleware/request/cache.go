@@ -32,6 +32,7 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 

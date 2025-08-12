@@ -29,6 +29,7 @@ func TestNewCacheMiddleware(t *testing.T) {
 	middleware, closer := NewCacheMiddleware(requestCache)
 
 	time.Sleep(100 * time.Millisecond) // Ensure cache is started
+
 	defer closer()
 
 	// Create a mock connection and request
@@ -66,6 +67,7 @@ func TestNewCacheMiddleware_NoCache(t *testing.T) {
 	middleware, closer := NewCacheMiddleware(requestCache)
 
 	time.Sleep(100 * time.Millisecond) // Ensure cache is started
+
 	defer closer()
 
 	// Create a mock connection and request
@@ -98,6 +100,7 @@ func TestNewCacheMiddleware_Error(t *testing.T) {
 	middleware, closer := NewCacheMiddleware(requestCache)
 
 	time.Sleep(100 * time.Millisecond) // Ensure cache is started
+
 	defer closer()
 
 	// Create a mock connection and request
@@ -127,6 +130,7 @@ func TestNewCacheMiddleware_ContextCancelled(t *testing.T) {
 	middleware, closer := NewCacheMiddleware(requestCache)
 
 	time.Sleep(100 * time.Millisecond) // Ensure cache is started
+
 	defer closer()
 
 	// Create a mock connection and request
