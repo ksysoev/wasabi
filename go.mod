@@ -8,7 +8,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/ksysoev/ratestor v0.2.0
 	github.com/sony/gobreaker/v2 v2.2.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
