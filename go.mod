@@ -3,7 +3,7 @@ module github.com/ksysoev/wasabi
 go 1.24.1
 
 require (
-	github.com/coder/websocket v1.8.13
+	github.com/coder/websocket v1.8.14
 	github.com/google/uuid v1.6.0
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/ksysoev/ratestor v0.2.0
