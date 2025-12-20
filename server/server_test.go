@@ -428,7 +428,6 @@ func TestServer_WithProfilerEndpoint(t *testing.T) {
 
 	// Check if the profiler endpoint is enabled
 	resp, err := http.Get("http://" + server.Addr().String() + "/debug/pprof/")
-
 	if err != nil {
 		t.Errorf("Got unexpected error: %v", err)
 	}

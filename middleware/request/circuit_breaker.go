@@ -27,6 +27,7 @@ var (
 // The returned function can be used as middleware in a Wasabi server.
 func NewCircuitBreakerMiddleware(threshold uint32, period time.Duration) func(next wasabi.RequestHandler) wasabi.RequestHandler {
 	var st gobreaker.Settings
+
 	st.Timeout = period
 	st.ReadyToTrip = func(counts gobreaker.Counts) bool {
 		return counts.ConsecutiveFailures >= threshold

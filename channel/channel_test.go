@@ -143,7 +143,6 @@ func TestChannel_Shutdown(t *testing.T) {
 
 	// Call the Shutdown method
 	err := channel.Close(context.Background())
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}

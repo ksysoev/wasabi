@@ -29,7 +29,6 @@ func TestNewSetTimeoutMiddleware(t *testing.T) {
 	req.EXPECT().WithContext(mock.AnythingOfType("*context.timerCtx")).Return(req)
 
 	err := middleware.Handle(conn, req)
-
 	if err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}

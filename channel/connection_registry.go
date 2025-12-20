@@ -143,6 +143,7 @@ func (r *ConnectionRegistry) Close(ctx ...context.Context) error {
 
 		go func() {
 			defer wg.Done()
+
 			c.Close(websocket.StatusServiceRestart, "", ctx...)
 		}()
 	}

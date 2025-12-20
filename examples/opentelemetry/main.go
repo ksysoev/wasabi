@@ -95,7 +95,6 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 			semconv.ServiceName("Wasabi"),
 		),
 	)
-
 	if err != nil {
 		panic(err)
 	}

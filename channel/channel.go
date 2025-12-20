@@ -81,7 +81,6 @@ func (c *Channel) wsConnectionHandler() http.Handler {
 			CompressionMode:      c.config.compressionMode,
 			CompressionThreshold: c.config.compressionThreshold,
 		})
-
 		if err != nil {
 			return
 		}

@@ -69,6 +69,7 @@ func TestNewWSBackend(t *testing.T) {
 func TestGetConnectionExistingConnection(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
@@ -94,6 +95,7 @@ func TestGetConnectionExistingConnection(t *testing.T) {
 func TestGetConnectionNewConnection(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	b := NewWSBackend(url, func(_ wasabi.Request) (websocket.MessageType, []byte, error) {
@@ -167,7 +169,6 @@ func TestWSBackend_Handle(t *testing.T) {
 	})
 
 	err := b.Handle(conn, r)
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -196,7 +197,6 @@ func TestWSBackend_Handle_FailToConnect(t *testing.T) {
 	})
 
 	err := b.Handle(conn, r)
-
 	if err == nil {
 		t.Errorf("Expected error, but got nil")
 	}
@@ -262,7 +262,6 @@ func TestWSBackend_RequestFactory_Error(t *testing.T) {
 	})
 
 	err := b.Handle(conn, r)
-
 	if err == nil {
 		t.Errorf("Expected error, but got nil")
 	}

@@ -62,7 +62,6 @@ func TestNewSpanMiddleware_WithTracer(t *testing.T) {
 	span := trace.SpanFromContext(mockReq.Context())
 
 	err := handler.Handle(mockConn, mockReq)
-
 	if err != nil {
 		t.Errorf("Did not expect error but got: %+v", err)
 	}

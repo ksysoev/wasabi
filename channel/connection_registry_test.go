@@ -14,10 +14,10 @@ import (
 func TestConnectionRegistry_HandleConnection(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
-
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %v", err)
 	}
@@ -41,6 +41,7 @@ func TestConnectionRegistry_HandleConnection(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	done := make(chan struct{})
+
 	go func() {
 		registry.HandleConnection(ctx, ws, cb)
 		close(done)
@@ -72,10 +73,10 @@ func TestConnectionRegistry_AddConnection_ToClosedRegistry(t *testing.T) {
 
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
-
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,6 +90,7 @@ func TestConnectionRegistry_AddConnection_ToClosedRegistry(t *testing.T) {
 	cb := func(wasabi.Connection, wasabi.MessageType, []byte) {}
 
 	done := make(chan struct{})
+
 	go func() {
 		registry.HandleConnection(ctx, ws, cb)
 		close(done)
@@ -146,7 +148,6 @@ func TestConnectionRegistry_Shutdown(t *testing.T) {
 	conn2.EXPECT().Close(websocket.StatusServiceRestart, "", ctx).Return(nil)
 
 	err := registry.Close(ctx)
-
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -192,10 +193,10 @@ func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
-
 	if err != nil {
 		t.Error(err)
 	}
@@ -223,6 +224,7 @@ func TestConnectionRegistry_WithOnConnect(t *testing.T) {
 	cancel()
 
 	done := make(chan struct{})
+
 	go func() {
 		registry.HandleConnection(ctx, ws, func(wasabi.Connection, wasabi.MessageType, []byte) {})
 		close(done)
@@ -263,10 +265,10 @@ func TestConnectionRegistry_WithOnDisconnectHook(t *testing.T) {
 
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
-
 	if err != nil {
 		t.Error(err)
 	}
@@ -330,6 +332,7 @@ func TestConnectionRegistry_AddConnection_ConnectionLimitReached(t *testing.T) {
 
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -342,6 +345,7 @@ func TestConnectionRegistry_AddConnection_ConnectionLimitReached(t *testing.T) {
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		registry.HandleConnection(ctx, ws, cb)
 		close(done)
