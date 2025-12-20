@@ -81,7 +81,6 @@ func NewCacheMiddleware(requestCache func(r wasabi.Request) (cacheKey string, tt
 
 				return resp, nil
 			})
-
 			if err != nil {
 				return err
 			}

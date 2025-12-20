@@ -21,7 +21,6 @@ linters:
     - nolintlint
     - prealloc
     - predeclared
-    - revive
     - staticcheck
     - thelper
     - tparallel
@@ -29,7 +28,7 @@ linters:
     - unparam
     - unused
     - whitespace
-    - wsl
+    - wsl_v5
   settings:
     errcheck:
       check-type-assertions: true

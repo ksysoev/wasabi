@@ -101,8 +101,8 @@ func (c *Conn) handleRequests() {
 		}
 
 		buffer := c.bufferPool.get()
-		msgType, reader, err := c.ws.Reader(c.ctx)
 
+		msgType, reader, err := c.ws.Reader(c.ctx)
 		if err != nil {
 			return
 		}
@@ -130,6 +130,7 @@ func (c *Conn) handleRequests() {
 
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
+
 			c.onMessageCB(c, msgType, buffer.Bytes())
 			c.bufferPool.put(buffer)
 			<-c.sem

@@ -14,7 +14,6 @@ func NewErrorHandlingMiddleware(onError ErrorHandler) func(next wasabi.RequestHa
 	return func(next wasabi.RequestHandler) wasabi.RequestHandler {
 		return dispatch.RequestHandlerFunc(func(conn wasabi.Connection, req wasabi.Request) error {
 			err := next.Handle(conn, req)
-
 			if err != nil {
 				return onError(conn, req, err)
 			}

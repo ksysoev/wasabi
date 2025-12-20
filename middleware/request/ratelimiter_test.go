@@ -30,7 +30,6 @@ func TestNewRateLimiterMiddleware(t *testing.T) {
 
 	// Test rate limiter middleware
 	err := middleware(next).Handle(conn, req)
-
 	if err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}

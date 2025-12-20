@@ -30,6 +30,7 @@ func TestHandle_Success(t *testing.T) {
 
 	// Call the Handle method
 	done := make(chan struct{})
+
 	go func() {
 		err := b.Handle(conn, r)
 		if err != nil {
@@ -78,6 +79,7 @@ func TestHandle_Timeout(t *testing.T) {
 
 	// Call the Handle method
 	done := make(chan struct{})
+
 	go func() {
 		err := b.Handle(conn, r)
 		if err != context.Canceled {
@@ -125,6 +127,7 @@ func TestHandle_ErrorSendingRequest(t *testing.T) {
 
 	// Call the Handle method
 	done := make(chan struct{})
+
 	go func() {
 		err := b.Handle(conn, r)
 		if err != expectedError {
@@ -159,6 +162,7 @@ func TestHandle_ErrorConnectionClosed(t *testing.T) {
 
 	// Call the Handle method
 	done := make(chan struct{})
+
 	go func() {
 		err := b.Handle(conn, r)
 		if err != nil {

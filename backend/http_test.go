@@ -47,8 +47,8 @@ func TestHTTPBackend_Handle(t *testing.T) {
 
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
-		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 
+		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 		if err != nil {
 			return nil, err
 		}
@@ -97,8 +97,8 @@ func TestHTTPBackend_Handle_ErrorSendingResponse(t *testing.T) {
 
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
-		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 
+		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 		if err != nil {
 			return nil, err
 		}
@@ -128,8 +128,8 @@ func TestHTTPBackend_Handle_ErrorConnectionClosed(t *testing.T) {
 
 	backend := NewBackend(func(req wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString(string(req.Data()))
-		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 
+		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 		if err != nil {
 			return nil, err
 		}
@@ -162,8 +162,8 @@ func TestHTTPBackend_Handle_TimeoutRequestByContext(t *testing.T) {
 
 	backend := NewBackend(func(_ wasabi.Request) (*http.Request, error) {
 		bodyReader := bytes.NewBufferString("test request")
-		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 
+		httpReq, err := http.NewRequest("GET", server.URL, bodyReader)
 		if err != nil {
 			return nil, err
 		}

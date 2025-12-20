@@ -70,7 +70,6 @@ func TestConn_handleRequests(t *testing.T) {
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
-
 	if err != nil {
 		t.Errorf("Unexpected error dialing websocket: %v", err)
 	}
@@ -107,6 +106,7 @@ func TestConn_handleRequests(t *testing.T) {
 func TestConn_Send(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -131,6 +131,7 @@ func TestConn_Send(t *testing.T) {
 func TestConn_close(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -164,6 +165,7 @@ func TestConn_close(t *testing.T) {
 func TestConn_Close_PendingRequests(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -181,6 +183,7 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 	c := NewConnection(ctx, ws, nil, newBufferPool(), 1, 0)
 
 	done := make(chan struct{})
+
 	go func() {
 		c.handleRequests()
 		close(done)
@@ -201,6 +204,7 @@ func TestConn_Close_PendingRequests(t *testing.T) {
 func TestConn_Close_NoContext(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -248,6 +252,7 @@ func TestConn_Close_AlreadyClosed(t *testing.T) {
 func TestConn_watchInactivity(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)
@@ -287,6 +292,7 @@ func TestConn_watchInactivity(t *testing.T) {
 func TestConn_watchInactivity_stopping_timer(t *testing.T) {
 	server := httptest.NewServer(wsHandlerEcho)
 	defer server.Close()
+
 	url := "ws://" + server.Listener.Addr().String()
 
 	ws, resp, err := websocket.Dial(context.Background(), url, nil)

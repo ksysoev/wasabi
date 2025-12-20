@@ -50,13 +50,11 @@ func NewWSBackend(baseURL string, factory WSRequestFactory, opts ...WSBackendOpt
 // The function returns an error if there is any issue with the connection or writing the data.
 func (b *WSBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	c, err := b.getConnection(conn)
-
 	if err != nil {
 		return err
 	}
 
 	msgType, data, err := b.factory(r)
-
 	if err != nil {
 		return err
 	}
@@ -91,7 +89,6 @@ func (b *WSBackend) getConnection(conn wasabi.Connection) (*websocket.Conn, erro
 
 		return c, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +140,6 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 		}
 
 		_, err = buffer.ReadFrom(reader)
-
 		if err != nil {
 			return
 		}
@@ -162,7 +158,6 @@ func (b *WSBackend) responseHandler(server *websocket.Conn, client wasabi.Connec
 // The function returns the connection and an error if there is any issue with the connection.
 func dialler(ctx context.Context, baseURL string) (*websocket.Conn, error) {
 	c, resp, err := websocket.Dial(ctx, baseURL, nil)
-
 	if err != nil {
 		return nil, err
 	}

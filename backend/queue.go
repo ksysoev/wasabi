@@ -70,7 +70,6 @@ func (b *QueueBackend) Handle(conn wasabi.Connection, r wasabi.Request) error {
 	}()
 
 	err := b.onRequest(conn, r, id)
-
 	if err != nil {
 		return err
 	}
