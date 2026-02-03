@@ -8,13 +8,17 @@ import (
 )
 
 func TestNewLoadBalancer(t *testing.T) {
-	backends := []struct {
+	backends := make([]struct {
 		Handler wasabi.RequestHandler
 		Weight  int32
-	}{{
+	}, 1, 2)
+	backends[0] = struct {
+		Handler wasabi.RequestHandler
+		Weight  int32
+	}{
 		Handler: mocks.NewMockBackend(t),
 		Weight:  1,
-	}}
+	}
 
 	_, err := NewLoadBalancer(backends)
 	if err != ErrNotEnoughBackends {

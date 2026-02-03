@@ -49,9 +49,14 @@ func TestNewRetryMiddleware_CancelledContext_WithLinearRetryPolicy(t *testing.T)
 	interval := time.Microsecond
 	middleware := NewRetryMiddleware(LinearGetRetryInterval(interval), maxRetries)
 
-	// Create a mock request handler
-	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, _ wasabi.Request) error {
-		return fmt.Errorf("mock error")
+	// Create a mock request handler that respects context cancellation
+	mockHandler := dispatch.RequestHandlerFunc(func(_ wasabi.Connection, r wasabi.Request) error {
+		select {
+		case <-time.After(10 * time.Millisecond):
+			return fmt.Errorf("mock error")
+		case <-r.Context().Done():
+			return r.Context().Err()
+		}
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
