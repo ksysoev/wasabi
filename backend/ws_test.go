@@ -19,6 +19,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return
 	}
+
 	defer func() { _ = c.Close(websocket.StatusNormalClosure, "") }()
 
 	for {
@@ -27,6 +28,7 @@ var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request
 			if err == io.EOF {
 				return
 			}
+
 			return
 		}
 

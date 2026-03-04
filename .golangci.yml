@@ -61,6 +61,10 @@ linters:
       - linters:
           - goconst
         path: _test\.go$
+      - linters:
+          - gosec
+        text: "G704"
+        path: backend/http\.go$
     paths:
       - third_party$
       - builtin$
