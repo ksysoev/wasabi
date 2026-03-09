@@ -22,22 +22,22 @@ else
 
     GOVERSION=`go version`
     printf $GOVERSION
-    if [[ $GOVERSION == *"1.22."* ]]
+    if [[ $GOVERSION == *"1.26."* ]]
     then
         printf "${PASS}Go version is correctly set in your environment${INFO}\n"
     else
-        printerr "${WARN}$GOVERSION is not the ideal Go version. Please set it to${GREEN}1.22.x${INFO}\n"
+        printerr "${WARN}$GOVERSION is not the ideal Go version. Please set it to${GREEN}1.26.x${INFO}\n"
     fi
 
     # CHECK GOLANG-CI LINT VERSION - THROW ONLY WARNING IF IT DOES NOT MATCH WITH THE DESIRED VERSION
     printf "Checking golangci-lint version at ${GOPATH}/bin/golangci-lint\n"
     LINTVERSION=`golangci-lint --version`
     printf $LINTVERSION
-    if [[ $LINTVERSION == *"1.55.2"* ]]
+    if [[ $LINTVERSION == *"2.11.2"* ]]
     then
         printf "${PASS}golangci-lint version is correctly set in your environment${INFO}\n"
     else
-        printerr "${WARN}$LINTVERSION is not the ideal golangci-lint version. Please set it to${GREEN}1.55.2${INFO}\n"
+        printerr "${WARN}$LINTVERSION is not the ideal golangci-lint version. Please set it to${GREEN}2.11.2${INFO}\n"
     fi
 
     exit 0

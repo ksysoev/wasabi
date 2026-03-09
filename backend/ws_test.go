@@ -12,6 +12,7 @@ import (
 	"github.com/ksysoev/wasabi"
 	"github.com/ksysoev/wasabi/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var wsHandlerEcho = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -155,12 +156,15 @@ func TestWSBackend_Handle(t *testing.T) {
 	conn := mocks.NewMockConnection(t)
 	conn.EXPECT().ID().Return("connection1")
 	conn.EXPECT().Context().Return(context.Background())
-	waitForSend := conn.
+
+	done := make(chan struct{})
+
+	conn.
 		EXPECT().
 		Send(websocket.MessageText, []byte("Hello, world!")).
 		Return(nil).
 		Once().
-		WaitUntil(time.After(500 * time.Millisecond)).WaitFor
+		Run(func(_ mock.Arguments) { close(done) })
 
 	r := mocks.NewMockRequest(t)
 	r.EXPECT().Data().Return([]byte("Hello, world!"))
@@ -176,8 +180,8 @@ func TestWSBackend_Handle(t *testing.T) {
 	}
 
 	select {
-	case <-waitForSend:
-	case <-time.After(1 * time.Second):
+	case <-done:
+	case <-time.After(5 * time.Second):
 		t.Error("Expected message to be sent")
 	}
 }
