@@ -8,7 +8,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/ksysoev/ratestor v0.2.0
 	github.com/sony/gobreaker/v2 v2.4.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
@@ -25,9 +25,7 @@ require (
 )
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/objx v0.5.3 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0
 	go.opentelemetry.io/otel/sdk v1.45.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
