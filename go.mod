@@ -27,6 +27,6 @@ require (
 
 require (
 	github.com/stretchr/objx v0.5.3 // indirect
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0
-	go.opentelemetry.io/otel/sdk v1.45.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.46.0
+	go.opentelemetry.io/otel/sdk v1.46.0
 )
